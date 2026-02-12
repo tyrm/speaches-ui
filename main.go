@@ -286,6 +286,21 @@ func serveHome(c *gin.Context) {
 <body>
 	<div class="container-main">
 		<h1>🔊 Awesome TTS Project</h1>
+
+		<!-- Audio Player -->
+		<div id="playerContainer" class="player-container">
+			<div class="player-controls">
+				<button id="playBtn" class="play-btn">▶ Play</button>
+				<div class="progress-container">
+					<input type="range" id="progressBar" class="progress-bar" min="0" value="0">
+					<span id="timeDisplay" class="time-display">0:00 / 0:00</span>
+				</div>
+			</div>
+		</div>
+
+		<!-- Hidden audio element for playback -->
+		<audio id="audioPlayer"></audio>
+
 		<form id="ttsForm">
 			<div class="form-group">
 				<label for="paragraphInput">Enter text to speak:</label>
@@ -324,20 +339,6 @@ func serveHome(c *gin.Context) {
 			<div id="errorAlert" class="alert alert-danger" role="alert"></div>
 			<div id="successAlert" class="alert alert-success" role="alert"></div>
 		</form>
-
-		<!-- Audio Player -->
-		<div id="playerContainer" class="player-container">
-			<div class="player-controls">
-				<button id="playBtn" class="play-btn">▶ Play</button>
-				<div class="progress-container">
-					<input type="range" id="progressBar" class="progress-bar" min="0" value="0">
-					<span id="timeDisplay" class="time-display">0:00 / 0:00</span>
-				</div>
-			</div>
-		</div>
-
-		<!-- Hidden audio element for playback -->
-		<audio id="audioPlayer"></audio>
 	</div>
 
 	<!-- Bootstrap 5.3 JS from CDN -->

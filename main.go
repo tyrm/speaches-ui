@@ -95,7 +95,7 @@ func serveHome(c *gin.Context) {
 			align-items: center;
 			justify-content: center;
 			min-height: 100vh;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #0099ff 0%, #00cc88 100%);
 		}
 		.container-main {
 			background: white;
@@ -129,15 +129,15 @@ func serveHome(c *gin.Context) {
 			padding: 12px;
 			font-size: 18px;
 			font-weight: 600;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #0099ff 0%, #00cc88 100%);
 			border: none;
 			cursor: pointer;
 			transition: all 0.3s ease;
 		}
 		.btn-speak:hover {
-			background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+			background: linear-gradient(135deg, #00cc88 0%, #0099ff 100%);
 			transform: translateY(-2px);
-			box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+			box-shadow: 0 5px 15px rgba(0, 153, 255, 0.4);
 		}
 		.btn-speak:disabled {
 			opacity: 0.6;
@@ -176,7 +176,7 @@ func serveHome(c *gin.Context) {
 			margin-bottom: 10px;
 		}
 		.play-btn {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #0099ff 0%, #00cc88 100%);
 			color: white;
 			border: none;
 			padding: 8px 16px;
@@ -189,7 +189,7 @@ func serveHome(c *gin.Context) {
 		}
 		.play-btn:hover {
 			transform: translateY(-2px);
-			box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+			box-shadow: 0 4px 10px rgba(0, 153, 255, 0.3);
 		}
 		.play-btn:active {
 			transform: translateY(0);
@@ -215,7 +215,7 @@ func serveHome(c *gin.Context) {
 			-webkit-appearance: none;
 			width: 14px;
 			height: 14px;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #0099ff 0%, #00cc88 100%);
 			border-radius: 50%;
 			cursor: pointer;
 			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -223,7 +223,7 @@ func serveHome(c *gin.Context) {
 		.progress-bar::-moz-range-thumb {
 			width: 14px;
 			height: 14px;
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #0099ff 0%, #00cc88 100%);
 			border-radius: 50%;
 			cursor: pointer;
 			border: none;

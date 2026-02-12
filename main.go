@@ -27,7 +27,8 @@ func main() {
 // handleTTS processes text-to-speech requests by calling the speaches.ai server
 func handleTTS(c *gin.Context) {
 	var req struct {
-		Text string `json:"text" binding:"required"`
+		Text  string `json:"text" binding:"required"`
+		Voice string `json:"voice"`
 	}
 
 	if err := c.BindJSON(&req); err != nil {
@@ -40,11 +41,39 @@ func handleTTS(c *gin.Context) {
 		return
 	}
 
+	// Set default voice if not provided
+	voice := req.Voice
+	if voice == "" {
+		voice = "alloy"
+	}
+
+	// Validate voice is one of the available voices (Kokoro model)
+	validVoices := map[string]bool{
+		// American Female
+		"af_nova":  true,
+		"af_sarah": true,
+		"af_bella": true,
+		"af_heart": true,
+		// American Male
+		"am_adam":  true,
+		"am_echo":  true,
+		"am_liam":  true,
+		"am_onyx":  true,
+		// British
+		"bf_alice":  true,
+		"bm_fable":  true,
+		"bm_george": true,
+	}
+	if !validVoices[voice] {
+		// WARNING: Invalid voice requested, using default
+		voice = "af_nova"
+	}
+
 	// Create request payload for speaches.ai server (OpenAI API compatible)
 	payload := map[string]interface{}{
 		"model": "tts-1",
 		"input": req.Text,
-		"voice": "alloy",
+		"voice": voice,
 	}
 
 	jsonPayload, err := json.Marshal(payload)
@@ -117,6 +146,22 @@ func serveHome(c *gin.Context) {
 			font-weight: 600;
 			color: #555;
 			margin-bottom: 10px;
+		}
+		.form-control {
+			border-color: #ddd;
+			transition: border-color 0.3s ease, box-shadow 0.3s ease;
+		}
+		.form-control:focus {
+			border-color: #0052b3;
+			box-shadow: 0 0 0 0.2rem rgba(0, 82, 179, 0.25);
+		}
+		select.form-control {
+			cursor: pointer;
+			padding: 8px 12px;
+			font-size: 14px;
+		}
+		select.form-control option {
+			padding: 8px 12px;
 		}
 		textarea.form-control {
 			resize: vertical;
@@ -250,6 +295,28 @@ func serveHome(c *gin.Context) {
 					placeholder="Type your text here..."
 					required></textarea>
 			</div>
+			<div class="form-group">
+				<label for="voiceSelect">Select Voice:</label>
+				<select class="form-control" id="voiceSelect">
+					<optgroup label="American Female">
+						<option value="af_nova">Nova (Neutral)</option>
+						<option value="af_sarah">Sarah (Clear)</option>
+						<option value="af_bella">Bella (Warm)</option>
+						<option value="af_heart">Heart (Expressive)</option>
+					</optgroup>
+					<optgroup label="American Male">
+						<option value="am_adam">Adam (Friendly)</option>
+						<option value="am_echo">Echo (Deep)</option>
+						<option value="am_liam">Liam (Professional)</option>
+						<option value="am_onyx">Onyx (Commanding)</option>
+					</optgroup>
+					<optgroup label="British">
+						<option value="bf_alice">Alice (Female)</option>
+						<option value="bm_fable">Fable (Male)</option>
+						<option value="bm_george">George (Male)</option>
+					</optgroup>
+				</select>
+			</div>
 			<button type="button" class="btn btn-primary btn-speak" id="speakBtn">
 				Speak
 			</button>
@@ -278,6 +345,7 @@ func serveHome(c *gin.Context) {
 	<script>
 		const speakBtn = document.getElementById('speakBtn');
 		const textInput = document.getElementById('paragraphInput');
+		const voiceSelect = document.getElementById('voiceSelect');
 		const audioPlayer = document.getElementById('audioPlayer');
 		const playerContainer = document.getElementById('playerContainer');
 		const playBtn = document.getElementById('playBtn');
@@ -307,13 +375,16 @@ func serveHome(c *gin.Context) {
 			playerContainer.classList.remove('show');
 
 			try {
-				// Send request to TTS endpoint
+				// Send request to TTS endpoint with selected voice
 				const response = await fetch('/api/tts', {
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 					},
-					body: JSON.stringify({ text: text })
+					body: JSON.stringify({
+						text: text,
+						voice: voiceSelect.value
+					})
 				});
 
 				if (!response.ok) {

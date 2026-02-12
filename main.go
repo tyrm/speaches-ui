@@ -41,6 +41,7 @@ func handleTTS(c *gin.Context) {
 	var req struct {
 		Text  string `json:"text" binding:"required"`
 		Voice string `json:"voice"`
+		Model string `json:"model"`
 	}
 
 	if err := c.BindJSON(&req); err != nil {
@@ -53,11 +54,17 @@ func handleTTS(c *gin.Context) {
 		return
 	}
 
+	// Set default model if not provided
+	model := req.Model
+	if model == "" {
+		model = "tts-1"
+	}
+
 	// Set default voice if not provided
 	voice := req.Voice
 
-	// Validate voice is one of the available voices (Kokoro model)
-	validVoices := map[string]bool{
+	// Validate voice based on model
+	kokoroVoices := map[string]bool{
 		// American Female
 		"af_nova":  true,
 		"af_sarah": true,
@@ -73,14 +80,73 @@ func handleTTS(c *gin.Context) {
 		"bm_fable":  true,
 		"bm_george": true,
 	}
-	if !validVoices[voice] {
-		// WARNING: Invalid voice requested, using default
+
+	piperVoices := map[string]bool{
+		// English US - Ryan
+		"en_US-ryan-high":     true,
+		"en_US-ryan-low":      true,
+		"en_US-ryan-medium":   true,
+		// English US - Female
+		"en_US-amy-low":           true,
+		"en_US-amy-medium":        true,
+		"en_US-hfc_female-medium": true,
+		"en_US-kathleen-low":      true,
+		"en_US-kristin-medium":    true,
+		"en_US-ljspeech-high":     true,
+		"en_US-ljspeech-medium":   true,
+		// English US - Male
+		"en_US-hfc_male-medium": true,
+		"en_US-lessac-high":     true,
+		"en_US-lessac-low":      true,
+		"en_US-lessac-medium":   true,
+		"en_US-danny-low":       true,
+		"en_US-joe-medium":      true,
+		"en_US-john-medium":     true,
+		"en_US-bryce-medium":    true,
+		"en_US-kusal-medium":    true,
+		"en_US-norman-medium":   true,
+		// English US - Other
+		"en_US-libritts-high":    true,
+		"en_US-libritts_r-medium": true,
+		"en_US-arctic-medium":    true,
+		"en_US-l2arctic-medium":  true,
+		// English GB
+		"en_GB-alan-low":                        true,
+		"en_GB-alan-medium":                     true,
+		"en_GB-southern_english_female-low":     true,
+		"en_GB-alba-medium":                     true,
+		"en_GB-aru-medium":                      true,
+		"en_GB-cori-high":                       true,
+		"en_GB-cori-medium":                     true,
+		"en_GB-jenny_dioco-medium":              true,
+		"en_GB-northern_english_male-medium":    true,
+		"en_GB-semaine-medium":                  true,
+		"en_GB-vctk-medium":                     true,
+	}
+
+	// Validate and set defaults based on model
+	var actualModel string
+	if model == "tts-1" {
+		if !kokoroVoices[voice] {
+			voice = "af_nova"
+		}
+		actualModel = "tts-1"
+	} else if model == "tts-1-piper" {
+		if !piperVoices[voice] {
+			voice = "en_US-ryan-medium"
+		}
+		// For Piper, the model is the full path: speaches-ai/piper-{voice}
+		actualModel = "speaches-ai/piper-" + voice
+	} else {
+		// Unknown model, default to Kokoro
+		model = "tts-1"
 		voice = "af_nova"
+		actualModel = "tts-1"
 	}
 
 	// Create request payload for speaches.ai server (OpenAI API compatible)
 	payload := map[string]interface{}{
-		"model": "tts-1",
+		"model": actualModel,
 		"input": req.Text,
 		"voice": voice,
 	}
@@ -97,6 +163,8 @@ func handleTTS(c *gin.Context) {
 		speachesBaseURL = "http://localhost:8000"
 	}
 	speachesURL := speachesBaseURL + "/v1/audio/speech"
+
+	// Try to make the TTS request
 	resp, err := http.Post(speachesURL, "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		// ERROR: Failed to connect to speaches.ai server on localhost:8000
@@ -105,10 +173,41 @@ func handleTTS(c *gin.Context) {
 	}
 	defer resp.Body.Close()
 
+	// Check if model needs to be downloaded
 	if resp.StatusCode != http.StatusOK {
-		// ERROR: speaches.ai server returned an error
 		body, _ := io.ReadAll(resp.Body)
-		c.JSON(resp.StatusCode, gin.H{"error": "speaches.ai server error: " + string(body)})
+		errorMsg := string(body)
+
+		// Check if error is about missing model (for Piper voices)
+		if model == "tts-1-piper" && (bytes.Contains(body, []byte("is not installed locally")) || (bytes.Contains(body, []byte("Model")) && bytes.Contains(body, []byte("not found")))) {
+			// Auto-download the Piper voice model
+			// URL-encode the model ID for the download endpoint
+			modelID := "speaches-ai%2Fpiper-" + voice
+			downloadURL := speachesBaseURL + "/v1/models/" + modelID
+			downloadResp, downloadErr := http.Post(downloadURL, "application/json", nil)
+			if downloadErr == nil {
+				downloadResp.Body.Close()
+
+				// Retry the TTS request after downloading
+				resp2, err2 := http.Post(speachesURL, "application/json", bytes.NewBuffer(jsonPayload))
+				if err2 != nil {
+					c.JSON(http.StatusServiceUnavailable, gin.H{"error": "Failed to generate speech after downloading model"})
+					return
+				}
+				defer resp2.Body.Close()
+
+				if resp2.StatusCode == http.StatusOK {
+					// Success! Stream the audio
+					c.Header("Content-Type", "audio/mpeg")
+					c.Header("Content-Disposition", "inline")
+					io.Copy(c.Writer, resp2.Body)
+					return
+				}
+			}
+		}
+
+		// If we get here, return the original error
+		c.JSON(resp.StatusCode, gin.H{"error": "speaches.ai server error: " + errorMsg})
 		return
 	}
 
@@ -324,25 +423,16 @@ func serveHome(c *gin.Context) {
 					required></textarea>
 			</div>
 			<div class="form-group">
+				<label for="modelSelect">Select Model:</label>
+				<select class="form-control" id="modelSelect">
+					<option value="tts-1">Kokoro (Neural TTS)</option>
+					<option value="tts-1-piper">Piper (Fast TTS)</option>
+				</select>
+			</div>
+			<div class="form-group">
 				<label for="voiceSelect">Select Voice:</label>
 				<select class="form-control" id="voiceSelect">
-					<optgroup label="American Female">
-						<option value="af_nova">Nova (Neutral)</option>
-						<option value="af_sarah">Sarah (Clear)</option>
-						<option value="af_bella">Bella (Warm)</option>
-						<option value="af_heart">Heart (Expressive)</option>
-					</optgroup>
-					<optgroup label="American Male">
-						<option value="am_adam">Adam (Friendly)</option>
-						<option value="am_echo">Echo (Deep)</option>
-						<option value="am_liam">Liam (Professional)</option>
-						<option value="am_onyx">Onyx (Commanding)</option>
-					</optgroup>
-					<optgroup label="British">
-						<option value="bf_alice">Alice (Female)</option>
-						<option value="bm_fable">Fable (Male)</option>
-						<option value="bm_george">George (Male)</option>
-					</optgroup>
+					<!-- Voices will be populated dynamically based on model -->
 				</select>
 			</div>
 			<button type="button" class="btn btn-primary btn-speak" id="speakBtn">
@@ -359,6 +449,7 @@ func serveHome(c *gin.Context) {
 	<script>
 		const speakBtn = document.getElementById('speakBtn');
 		const textInput = document.getElementById('paragraphInput');
+		const modelSelect = document.getElementById('modelSelect');
 		const voiceSelect = document.getElementById('voiceSelect');
 		const audioPlayer = document.getElementById('audioPlayer');
 		const playerContainer = document.getElementById('playerContainer');
@@ -370,6 +461,95 @@ func serveHome(c *gin.Context) {
 		const statusMessage = document.getElementById('statusMessage');
 
 		let audioUrl = null;
+
+		// Voice options for each model
+		const voiceOptions = {
+			'tts-1': {
+				'American Female': [
+					{ value: 'af_nova', label: 'Nova (Neutral)' },
+					{ value: 'af_sarah', label: 'Sarah (Clear)' },
+					{ value: 'af_bella', label: 'Bella (Warm)' },
+					{ value: 'af_heart', label: 'Heart (Expressive)' }
+				],
+				'American Male': [
+					{ value: 'am_adam', label: 'Adam (Friendly)' },
+					{ value: 'am_echo', label: 'Echo (Deep)' },
+					{ value: 'am_liam', label: 'Liam (Professional)' },
+					{ value: 'am_onyx', label: 'Onyx (Commanding)' }
+				],
+				'British': [
+					{ value: 'bf_alice', label: 'Alice (Female)' },
+					{ value: 'bm_fable', label: 'Fable (Male)' },
+					{ value: 'bm_george', label: 'George (Male)' }
+				]
+			},
+			'tts-1-piper': {
+				'Ryan (US Male)': [
+					{ value: 'en_US-ryan-high', label: 'High Quality' },
+					{ value: 'en_US-ryan-medium', label: 'Medium Quality' },
+					{ value: 'en_US-ryan-low', label: 'Low Quality' }
+				],
+				'US Female Voices': [
+					{ value: 'en_US-hfc_female-medium', label: 'HFC Female' },
+					{ value: 'en_US-amy-medium', label: 'Amy Medium' },
+					{ value: 'en_US-amy-low', label: 'Amy Low' },
+					{ value: 'en_US-kathleen-low', label: 'Kathleen' },
+					{ value: 'en_US-kristin-medium', label: 'Kristin' },
+					{ value: 'en_US-ljspeech-high', label: 'LJ Speech High' },
+					{ value: 'en_US-ljspeech-medium', label: 'LJ Speech Medium' }
+				],
+				'US Male Voices': [
+					{ value: 'en_US-hfc_male-medium', label: 'HFC Male' },
+					{ value: 'en_US-lessac-high', label: 'Lessac High' },
+					{ value: 'en_US-lessac-medium', label: 'Lessac Medium' },
+					{ value: 'en_US-lessac-low', label: 'Lessac Low' },
+					{ value: 'en_US-danny-low', label: 'Danny' },
+					{ value: 'en_US-joe-medium', label: 'Joe' },
+					{ value: 'en_US-john-medium', label: 'John' },
+					{ value: 'en_US-bryce-medium', label: 'Bryce' },
+					{ value: 'en_US-norman-medium', label: 'Norman' }
+				],
+				'British Voices': [
+					{ value: 'en_GB-alan-medium', label: 'Alan Medium' },
+					{ value: 'en_GB-alan-low', label: 'Alan Low' },
+					{ value: 'en_GB-southern_english_female-low', label: 'Southern Female' },
+					{ value: 'en_GB-alba-medium', label: 'Alba' },
+					{ value: 'en_GB-cori-high', label: 'Cori High' },
+					{ value: 'en_GB-cori-medium', label: 'Cori Medium' },
+					{ value: 'en_GB-jenny_dioco-medium', label: 'Jenny Dioco' }
+				]
+			}
+		};
+
+		// Populate voice dropdown based on selected model
+		function updateVoiceOptions() {
+			const selectedModel = modelSelect.value;
+			const voices = voiceOptions[selectedModel];
+
+			// Clear current options
+			voiceSelect.innerHTML = '';
+
+			// Add new options based on model
+			for (const [group, voiceList] of Object.entries(voices)) {
+				const optgroup = document.createElement('optgroup');
+				optgroup.label = group;
+
+				voiceList.forEach(voice => {
+					const option = document.createElement('option');
+					option.value = voice.value;
+					option.textContent = voice.label;
+					optgroup.appendChild(option);
+				});
+
+				voiceSelect.appendChild(optgroup);
+			}
+		}
+
+		// Initialize voice options on page load
+		updateVoiceOptions();
+
+		// Update voice options when model changes
+		modelSelect.addEventListener('change', updateVoiceOptions);
 
 		// Handle the speak button click
 		speakBtn.addEventListener('click', async function() {
@@ -389,7 +569,7 @@ func serveHome(c *gin.Context) {
 			playerContainer.classList.remove('show');
 
 			try {
-				// Send request to TTS endpoint with selected voice
+				// Send request to TTS endpoint with selected model and voice
 				const response = await fetch('/api/tts', {
 					method: 'POST',
 					headers: {
@@ -397,6 +577,7 @@ func serveHome(c *gin.Context) {
 					},
 					body: JSON.stringify({
 						text: text,
+						model: modelSelect.value,
 						voice: voiceSelect.value
 					})
 				});

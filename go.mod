@@ -1,4 +1,4 @@
-module awesomeTTSProject3
+module tyr.codes/tyr/speaches-ui
 
 go 1.21
 

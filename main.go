@@ -2,16 +2,27 @@ package main
 
 import (
 	"bytes"
+	"embed"
+	_ "embed"
 	"encoding/json"
 	"io"
+	"io/fs"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 )
 
+//go:embed assets/*
+var webAssets embed.FS
+
 func main() {
 	// Create a new Gin router with default middleware
 	router := gin.Default()
+
+	// Serve static files from embedded filesystem at /assets/
+	// Use fs.Sub to serve from assets/ subdirectory
+	assetsFS, _ := fs.Sub(webAssets, "assets")
+	router.StaticFS("/assets", http.FS(assetsFS))
 
 	// Serve the home page
 	router.GET("/", serveHome)
@@ -43,9 +54,6 @@ func handleTTS(c *gin.Context) {
 
 	// Set default voice if not provided
 	voice := req.Voice
-	if voice == "" {
-		voice = "alloy"
-	}
 
 	// Validate voice is one of the available voices (Kokoro model)
 	validVoices := map[string]bool{
@@ -55,10 +63,10 @@ func handleTTS(c *gin.Context) {
 		"af_bella": true,
 		"af_heart": true,
 		// American Male
-		"am_adam":  true,
-		"am_echo":  true,
-		"am_liam":  true,
-		"am_onyx":  true,
+		"am_adam": true,
+		"am_echo": true,
+		"am_liam": true,
+		"am_onyx": true,
 		// British
 		"bf_alice":  true,
 		"bm_fable":  true,
@@ -116,15 +124,15 @@ func serveHome(c *gin.Context) {
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Awesome TTS Project</title>
-	<!-- Bootstrap 5.3 CSS from CDN -->
-	<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+	<!-- Bootstrap 5.3 CSS from local assets -->
+	<link href="/assets/css/bootstrap.min.css" rel="stylesheet">
 	<style>
 		body {
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			min-height: 100vh;
-			background: linear-gradient(135deg, #0052b3 0%, #004d73 100%);
+			background: linear-gradient(135deg, #0052b3 0%, #00a870 100%);
 		}
 		.container-main {
 			background: white;
@@ -152,8 +160,8 @@ func serveHome(c *gin.Context) {
 			transition: border-color 0.3s ease, box-shadow 0.3s ease;
 		}
 		.form-control:focus {
-			border-color: #0052b3;
-			box-shadow: 0 0 0 0.2rem rgba(0, 82, 179, 0.25);
+			border-color: #00a870;
+			box-shadow: 0 0 0 0.2rem rgba(0, 168, 112, 0.25);
 		}
 		select.form-control {
 			cursor: pointer;
@@ -174,13 +182,13 @@ func serveHome(c *gin.Context) {
 			padding: 12px;
 			font-size: 18px;
 			font-weight: 600;
-			background: linear-gradient(135deg, #0052b3 0%, #004d73 100%);
+			background: linear-gradient(135deg, #0052b3 0%, #00a870 100%);
 			border: none;
 			cursor: pointer;
 			transition: all 0.3s ease;
 		}
 		.btn-speak:hover {
-			background: linear-gradient(135deg, #004d73 0%, #0052b3 100%);
+			background: linear-gradient(135deg, #00a870 0%, #0052b3 100%);
 			transform: translateY(-2px);
 			box-shadow: 0 5px 15px rgba(0, 82, 179, 0.4);
 		}
@@ -221,7 +229,7 @@ func serveHome(c *gin.Context) {
 			margin-bottom: 10px;
 		}
 		.play-btn {
-			background: linear-gradient(135deg, #0052b3 0%, #004d73 100%);
+			background: linear-gradient(135deg, #0052b3 0%, #00a870 100%);
 			color: white;
 			border: none;
 			padding: 8px 16px;
@@ -260,7 +268,7 @@ func serveHome(c *gin.Context) {
 			-webkit-appearance: none;
 			width: 14px;
 			height: 14px;
-			background: linear-gradient(135deg, #0052b3 0%, #004d73 100%);
+			background: linear-gradient(135deg, #0052b3 0%, #00a870 100%);
 			border-radius: 50%;
 			cursor: pointer;
 			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
@@ -268,7 +276,7 @@ func serveHome(c *gin.Context) {
 		.progress-bar::-moz-range-thumb {
 			width: 14px;
 			height: 14px;
-			background: linear-gradient(135deg, #0052b3 0%, #004d73 100%);
+			background: linear-gradient(135deg, #0052b3 0%, #00a870 100%);
 			border-radius: 50%;
 			cursor: pointer;
 			border: none;
@@ -341,8 +349,8 @@ func serveHome(c *gin.Context) {
 		</form>
 	</div>
 
-	<!-- Bootstrap 5.3 JS from CDN -->
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+	<!-- Bootstrap 5.3 JS from local assets -->
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
 	<script>
 		const speakBtn = document.getElementById('speakBtn');
 		const textInput = document.getElementById('paragraphInput');

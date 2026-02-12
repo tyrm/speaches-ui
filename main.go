@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/fs"
 	"net/http"
+	"os"
 
 	"github.com/gin-gonic/gin"
 )
@@ -90,8 +91,12 @@ func handleTTS(c *gin.Context) {
 		return
 	}
 
-	// Call the speaches.ai server on localhost:8000
-	speachesURL := "http://localhost:8000/v1/audio/speech"
+	// Call the speaches.ai server using SPEACHES_URL environment variable
+	speachesBaseURL := os.Getenv("SPEACHES_URL")
+	if speachesBaseURL == "" {
+		speachesBaseURL = "http://localhost:8000"
+	}
+	speachesURL := speachesBaseURL + "/v1/audio/speech"
 	resp, err := http.Post(speachesURL, "application/json", bytes.NewBuffer(jsonPayload))
 	if err != nil {
 		// ERROR: Failed to connect to speaches.ai server on localhost:8000

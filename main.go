@@ -158,6 +158,84 @@ func serveHome(c *gin.Context) {
 			color: #666;
 			min-height: 20px;
 		}
+		.player-container {
+			display: none;
+			background: #f8f9fa;
+			border: 1px solid #dee2e6;
+			border-radius: 8px;
+			padding: 15px;
+			margin-top: 20px;
+		}
+		.player-container.show {
+			display: block;
+		}
+		.player-controls {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			margin-bottom: 10px;
+		}
+		.play-btn {
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			color: white;
+			border: none;
+			padding: 8px 16px;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 14px;
+			font-weight: 600;
+			transition: all 0.3s ease;
+			min-width: 80px;
+		}
+		.play-btn:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
+		}
+		.play-btn:active {
+			transform: translateY(0);
+		}
+		.progress-container {
+			flex: 1;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+		}
+		.progress-bar {
+			flex: 1;
+			height: 6px;
+			background: #dee2e6;
+			border-radius: 3px;
+			cursor: pointer;
+			appearance: none;
+			-webkit-appearance: none;
+			width: 100%;
+		}
+		.progress-bar::-webkit-slider-thumb {
+			appearance: none;
+			-webkit-appearance: none;
+			width: 14px;
+			height: 14px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			border-radius: 50%;
+			cursor: pointer;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+		}
+		.progress-bar::-moz-range-thumb {
+			width: 14px;
+			height: 14px;
+			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			border-radius: 50%;
+			cursor: pointer;
+			border: none;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+		}
+		.time-display {
+			font-size: 12px;
+			color: #666;
+			white-space: nowrap;
+			min-width: 50px;
+			text-align: right;
+		}
 	</style>
 </head>
 <body>
@@ -180,8 +258,19 @@ func serveHome(c *gin.Context) {
 			<div id="successAlert" class="alert alert-success" role="alert"></div>
 		</form>
 
+		<!-- Audio Player -->
+		<div id="playerContainer" class="player-container">
+			<div class="player-controls">
+				<button id="playBtn" class="play-btn">▶ Play</button>
+				<div class="progress-container">
+					<input type="range" id="progressBar" class="progress-bar" min="0" value="0">
+					<span id="timeDisplay" class="time-display">0:00 / 0:00</span>
+				</div>
+			</div>
+		</div>
+
 		<!-- Hidden audio element for playback -->
-		<audio id="audioPlayer" style="display: none;"></audio>
+		<audio id="audioPlayer"></audio>
 	</div>
 
 	<!-- Bootstrap 5.3 JS from CDN -->
@@ -190,9 +279,15 @@ func serveHome(c *gin.Context) {
 		const speakBtn = document.getElementById('speakBtn');
 		const textInput = document.getElementById('paragraphInput');
 		const audioPlayer = document.getElementById('audioPlayer');
+		const playerContainer = document.getElementById('playerContainer');
+		const playBtn = document.getElementById('playBtn');
+		const progressBar = document.getElementById('progressBar');
+		const timeDisplay = document.getElementById('timeDisplay');
 		const errorAlert = document.getElementById('errorAlert');
 		const successAlert = document.getElementById('successAlert');
 		const statusMessage = document.getElementById('statusMessage');
+
+		let audioUrl = null;
 
 		// Handle the speak button click
 		speakBtn.addEventListener('click', async function() {
@@ -209,6 +304,7 @@ func serveHome(c *gin.Context) {
 			speakBtn.textContent = '🔊 Speaking...';
 			statusMessage.textContent = 'Generating speech...';
 			hideAllAlerts();
+			playerContainer.classList.remove('show');
 
 			try {
 				// Send request to TTS endpoint
@@ -227,31 +323,99 @@ func serveHome(c *gin.Context) {
 
 				// Get the audio blob from the response
 				const audioBlob = await response.blob();
-				const audioUrl = URL.createObjectURL(audioBlob);
+				if (audioUrl) {
+					URL.revokeObjectURL(audioUrl);
+				}
+				audioUrl = URL.createObjectURL(audioBlob);
 
-				// Play the audio
+				// Set audio source and show player
 				audioPlayer.src = audioUrl;
+				playerContainer.classList.add('show');
+				resetPlayer();
 				audioPlayer.play();
+				updatePlayButton();
 
 				showSuccess('Speech generated and playing');
 				statusMessage.textContent = '';
-
-				// Clean up the URL when audio ends
-				audioPlayer.addEventListener('ended', function() {
-					URL.revokeObjectURL(audioUrl);
-					statusMessage.textContent = '';
-				}, { once: true });
 
 			} catch (error) {
 				console.error('TTS Error:', error);
 				showError('Error: ' + error.message);
 				statusMessage.textContent = '';
+				playerContainer.classList.remove('show');
 			} finally {
 				// Re-enable button
 				speakBtn.disabled = false;
 				speakBtn.textContent = '🔊 Speak';
 			}
 		});
+
+		// Play/Pause button handler
+		playBtn.addEventListener('click', function() {
+			if (audioPlayer.paused) {
+				audioPlayer.play();
+			} else {
+				audioPlayer.pause();
+			}
+			updatePlayButton();
+		});
+
+		// Update play button text
+		audioPlayer.addEventListener('play', updatePlayButton);
+		audioPlayer.addEventListener('pause', updatePlayButton);
+
+		function updatePlayButton() {
+			if (audioPlayer.paused) {
+				playBtn.textContent = '▶ Play';
+			} else {
+				playBtn.textContent = '⏸ Pause';
+			}
+		}
+
+		// Progress bar seeking
+		progressBar.addEventListener('input', function() {
+			if (audioPlayer.duration) {
+				audioPlayer.currentTime = (progressBar.value / 100) * audioPlayer.duration;
+			}
+		});
+
+		// Update progress bar and time display as audio plays
+		audioPlayer.addEventListener('timeupdate', function() {
+			if (audioPlayer.duration) {
+				progressBar.value = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+			}
+			updateTimeDisplay();
+		});
+
+		// Update progress bar max when metadata loads
+		audioPlayer.addEventListener('loadedmetadata', function() {
+			progressBar.max = 100;
+			updateTimeDisplay();
+		});
+
+		// Reset player when audio ends
+		audioPlayer.addEventListener('ended', function() {
+			resetPlayer();
+		});
+
+		function resetPlayer() {
+			progressBar.value = 0;
+			updatePlayButton();
+			updateTimeDisplay();
+		}
+
+		function updateTimeDisplay() {
+			const current = formatTime(audioPlayer.currentTime);
+			const duration = formatTime(audioPlayer.duration);
+			timeDisplay.textContent = current + ' / ' + duration;
+		}
+
+		function formatTime(seconds) {
+			if (!seconds || isNaN(seconds)) return '0:00';
+			const mins = Math.floor(seconds / 60);
+			const secs = Math.floor(seconds % 60);
+			return mins + ':' + secs.toString().padStart(2, '0');
+		}
 
 		function showError(message) {
 			errorAlert.textContent = message;

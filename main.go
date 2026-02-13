@@ -83,9 +83,9 @@ func handleTTS(c *gin.Context) {
 
 	piperVoices := map[string]bool{
 		// English US - Ryan
-		"en_US-ryan-high":     true,
-		"en_US-ryan-low":      true,
-		"en_US-ryan-medium":   true,
+		"en_US-ryan-high":   true,
+		"en_US-ryan-low":    true,
+		"en_US-ryan-medium": true,
 		// English US - Female
 		"en_US-amy-low":           true,
 		"en_US-amy-medium":        true,
@@ -106,22 +106,22 @@ func handleTTS(c *gin.Context) {
 		"en_US-kusal-medium":    true,
 		"en_US-norman-medium":   true,
 		// English US - Other
-		"en_US-libritts-high":    true,
+		"en_US-libritts-high":     true,
 		"en_US-libritts_r-medium": true,
-		"en_US-arctic-medium":    true,
-		"en_US-l2arctic-medium":  true,
+		"en_US-arctic-medium":     true,
+		"en_US-l2arctic-medium":   true,
 		// English GB
-		"en_GB-alan-low":                        true,
-		"en_GB-alan-medium":                     true,
-		"en_GB-southern_english_female-low":     true,
-		"en_GB-alba-medium":                     true,
-		"en_GB-aru-medium":                      true,
-		"en_GB-cori-high":                       true,
-		"en_GB-cori-medium":                     true,
-		"en_GB-jenny_dioco-medium":              true,
-		"en_GB-northern_english_male-medium":    true,
-		"en_GB-semaine-medium":                  true,
-		"en_GB-vctk-medium":                     true,
+		"en_GB-alan-low":                     true,
+		"en_GB-alan-medium":                  true,
+		"en_GB-southern_english_female-low":  true,
+		"en_GB-alba-medium":                  true,
+		"en_GB-aru-medium":                   true,
+		"en_GB-cori-high":                    true,
+		"en_GB-cori-medium":                  true,
+		"en_GB-jenny_dioco-medium":           true,
+		"en_GB-northern_english_male-medium": true,
+		"en_GB-semaine-medium":               true,
+		"en_GB-vctk-medium":                  true,
 	}
 
 	// Validate and set defaults based on model
@@ -227,7 +227,7 @@ func serveHome(c *gin.Context) {
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Awesome TTS Project</title>
+	<title>🍑 Speaches UI</title>
 	<!-- Bootstrap 5.3 CSS from local assets -->
 	<link href="/assets/css/bootstrap.min.css" rel="stylesheet">
 	<style>
@@ -237,14 +237,27 @@ func serveHome(c *gin.Context) {
 			justify-content: center;
 			min-height: 100vh;
 			background: linear-gradient(135deg, #0052b3 0%, #00a870 100%);
+			padding: 60px 20px;
 		}
 		.container-main {
 			background: white;
 			padding: 40px;
 			border-radius: 10px;
 			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-			max-width: 600px;
+			max-width: 1200px;
 			width: 100%;
+		}
+		.form-layout {
+			display: flex;
+			gap: 30px;
+			align-items: flex-start;
+		}
+		.form-left {
+			flex: 1;
+		}
+		.form-right {
+			width: 300px;
+			flex-shrink: 0;
 		}
 		h1 {
 			color: #333;
@@ -316,15 +329,12 @@ func serveHome(c *gin.Context) {
 			min-height: 20px;
 		}
 		.player-container {
-			display: none;
+			display: block;
 			background: #f8f9fa;
 			border: 1px solid #dee2e6;
 			border-radius: 8px;
 			padding: 15px;
-			margin-top: 20px;
-		}
-		.player-container.show {
-			display: block;
+			margin-bottom: 20px;
 		}
 		.player-controls {
 			display: flex;
@@ -397,7 +407,7 @@ func serveHome(c *gin.Context) {
 </head>
 <body>
 	<div class="container-main">
-		<h1>🔊 Awesome TTS Project</h1>
+		<h1>🍑 Speaches UI</h1>
 
 		<!-- Audio Player -->
 		<div id="playerContainer" class="player-container">
@@ -414,33 +424,39 @@ func serveHome(c *gin.Context) {
 		<audio id="audioPlayer"></audio>
 
 		<form id="ttsForm">
-			<div class="form-group">
-				<label for="paragraphInput">Enter text to speak:</label>
-				<textarea
-					class="form-control"
-					id="paragraphInput"
-					placeholder="Type your text here..."
-					required></textarea>
+			<div class="form-layout">
+				<div class="form-left">
+					<div class="form-group">
+						<label for="paragraphInput">Enter text to speak:</label>
+						<textarea
+							class="form-control"
+							id="paragraphInput"
+							placeholder="Type your text here..."
+							required></textarea>
+					</div>
+				</div>
+				<div class="form-right">
+					<div class="form-group">
+						<label for="modelSelect">Select Model:</label>
+						<select class="form-control" id="modelSelect">
+							<option value="tts-1">Kokoro (Neural TTS)</option>
+							<option value="tts-1-piper">Piper (Fast TTS)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label for="voiceSelect">Select Voice:</label>
+						<select class="form-control" id="voiceSelect">
+							<!-- Voices will be populated dynamically based on model -->
+						</select>
+					</div>
+					<button type="button" class="btn btn-primary btn-speak" id="speakBtn">
+						Speak
+					</button>
+					<div id="statusMessage"></div>
+				<div id="errorAlert" class="alert alert-danger" role="alert"></div>
+				<div id="successAlert" class="alert alert-success" role="alert"></div>
+				</div>
 			</div>
-			<div class="form-group">
-				<label for="modelSelect">Select Model:</label>
-				<select class="form-control" id="modelSelect">
-					<option value="tts-1">Kokoro (Neural TTS)</option>
-					<option value="tts-1-piper">Piper (Fast TTS)</option>
-				</select>
-			</div>
-			<div class="form-group">
-				<label for="voiceSelect">Select Voice:</label>
-				<select class="form-control" id="voiceSelect">
-					<!-- Voices will be populated dynamically based on model -->
-				</select>
-			</div>
-			<button type="button" class="btn btn-primary btn-speak" id="speakBtn">
-				Speak
-			</button>
-			<div id="statusMessage"></div>
-			<div id="errorAlert" class="alert alert-danger" role="alert"></div>
-			<div id="successAlert" class="alert alert-success" role="alert"></div>
 		</form>
 	</div>
 
@@ -526,6 +542,9 @@ func serveHome(c *gin.Context) {
 			const selectedModel = modelSelect.value;
 			const voices = voiceOptions[selectedModel];
 
+			// Remember currently selected voice before clearing
+			const previousVoice = voiceSelect.value;
+
 			// Clear current options
 			voiceSelect.innerHTML = '';
 
@@ -543,13 +562,52 @@ func serveHome(c *gin.Context) {
 
 				voiceSelect.appendChild(optgroup);
 			}
+
+			// Try to restore previous voice if it exists in new model
+			if (previousVoice && Array.from(voiceSelect.options).some(opt => opt.value === previousVoice)) {
+				voiceSelect.value = previousVoice;
+			}
 		}
 
-		// Initialize voice options on page load
+		// Load saved preferences from localStorage
+		function loadPreferences() {
+			const savedModel = localStorage.getItem('tts-model');
+			const savedVoice = localStorage.getItem('tts-voice');
+
+			if (savedModel) {
+				modelSelect.value = savedModel;
+			}
+
+			return savedVoice;
+		}
+
+		// Save model preference
+		function saveModelPreference() {
+			localStorage.setItem('tts-model', modelSelect.value);
+		}
+
+		// Save voice preference
+		function saveVoicePreference() {
+			localStorage.setItem('tts-voice', voiceSelect.value);
+		}
+
+		// Load preferences and initialize
+		const savedVoice = loadPreferences();
 		updateVoiceOptions();
 
+		// Restore saved voice after options are populated
+		if (savedVoice && Array.from(voiceSelect.options).some(opt => opt.value === savedVoice)) {
+			voiceSelect.value = savedVoice;
+		}
+
 		// Update voice options when model changes
-		modelSelect.addEventListener('change', updateVoiceOptions);
+		modelSelect.addEventListener('change', function() {
+			saveModelPreference();
+			updateVoiceOptions();
+		});
+
+		// Save voice preference when it changes
+		voiceSelect.addEventListener('change', saveVoicePreference);
 
 		// Handle the speak button click
 		speakBtn.addEventListener('click', async function() {
@@ -566,7 +624,6 @@ func serveHome(c *gin.Context) {
 			speakBtn.textContent = '🔊 Speaking...';
 			statusMessage.textContent = 'Generating speech...';
 			hideAllAlerts();
-			playerContainer.classList.remove('show');
 
 			try {
 				// Send request to TTS endpoint with selected model and voice
@@ -594,21 +651,18 @@ func serveHome(c *gin.Context) {
 				}
 				audioUrl = URL.createObjectURL(audioBlob);
 
-				// Set audio source and show player
+				// Set audio source and reset player
 				audioPlayer.src = audioUrl;
-				playerContainer.classList.add('show');
 				resetPlayer();
 				audioPlayer.play();
 				updatePlayButton();
 
-				showSuccess('Speech generated and playing');
-				statusMessage.textContent = '';
+					statusMessage.textContent = '';
 
 			} catch (error) {
 				console.error('TTS Error:', error);
 				showError('Error: ' + error.message);
 				statusMessage.textContent = '';
-				playerContainer.classList.remove('show');
 			} finally {
 				// Re-enable button
 				speakBtn.disabled = false;

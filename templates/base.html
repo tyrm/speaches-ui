@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{.Title}}</title>
+	<!-- Bootstrap 5.3 CSS -->
+	<link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+	<!-- App Styles -->
+	<link href="/assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+	<!-- Navigation Bar -->
+	<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="/">🍑 Speaches UI</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item">
+						<a class="nav-link {{if eq .Page "tts"}}active{{end}}" href="/">Text to Speech</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link {{if eq .Page "stt"}}active{{end}}" href="/stt">Speech to Text</a>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Hero Section -->
+	<section class="hero-section">
+		<div class="container">
+			<h1>{{.HeroTitle}}</h1>
+			<p>{{.HeroDescription}}</p>
+		</div>
+	</section>
+
+	<!-- Main Content -->
+	<div class="container">
+		<div class="container-main" id="{{.ContentID}}">
+			{{if eq .Page "tts"}}
+				{{template "tts-content" .}}
+			{{else if eq .Page "stt"}}
+				{{template "stt-content" .}}
+			{{end}}
+		</div>
+	</div>
+
+	<!-- Bootstrap JS -->
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+	{{if .ScriptFile}}
+		<script src="{{.ScriptFile}}"></script>
+	{{end}}
+</body>
+</html>

@@ -67,9 +67,37 @@ curl -X POST http://localhost:5420/api/tts \
 
 ## Project Structure
 
-- `main.go` - Server, routes, and embedded UI
-- `assets/` - Bootstrap CSS/JS files (embedded)
-- `go.mod` - Dependencies
+```
+├── main.go                      # Server, routes, and API handlers
+├── assets/
+│   ├── css/
+│   │   ├── bootstrap.min.css    # Bootstrap 5.3 framework
+│   │   └── style.css            # Shared application styles
+│   ├── js/
+│   │   └── bootstrap.bundle.min.js
+│   ├── index.html               # Legacy (kept for reference)
+│   └── stt.html                 # Legacy (kept for reference)
+├── templates/
+│   ├── base.html                # Base template with shared layout
+│   ├── tts.html                 # Text-to-Speech page content
+│   └── stt.html                 # Speech-to-Text page content
+├── go.mod                        # Go dependencies
+└── README.md                     # This file
+```
+
+## Template System
+
+The application uses Go's `html/template` package with a unified template architecture:
+
+- **base.html**: Shared HTML structure (doctype, head, navbar, hero section, footer)
+- **style.css**: Centralized styles for consistent formatting across all pages
+- **tts.html** & **stt.html**: Page-specific content templates that extend base.html
+
+This approach ensures:
+✅ Consistent UI/UX across all pages
+✅ Single source of truth for styles
+✅ Easy to maintain navbar and layout changes
+✅ DRY principle - no duplicated HTML
 
 ## License
 

@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"io"
 	"io/fs"
+	"mime/multipart"
 	"net/http"
 	"os"
 
@@ -28,8 +29,14 @@ func main() {
 	// Serve the home page
 	router.GET("/", serveHome)
 
+	// Serve the speech-to-text page
+	router.GET("/stt", serveSTT)
+
 	// TTS endpoint that calls speaches.ai server
 	router.POST("/api/tts", handleTTS)
+
+	// STT endpoint for speech-to-text requests
+	router.POST("/api/stt", handleSTT)
 
 	// Start the server on port 5420
 	// INFO: Server listening on http://localhost:5420
@@ -237,8 +244,9 @@ func handleTTS(c *gin.Context) {
 	io.Copy(c.Writer, resp.Body)
 }
 
-// serveHome serves the main HTML page
-func serveHome(c *gin.Context) {
+// OLD serveHome - REPLACED with static file version below
+/*
+func serveHome_old(c *gin.Context) {
 	html := `
 <!DOCTYPE html>
 <html lang="en">
@@ -804,4 +812,197 @@ func serveHome(c *gin.Context) {
 	`
 	c.Header("Content-Type", "text/html; charset=utf-8")
 	c.String(http.StatusOK, html)
+}
+*/
+
+// serveHome serves the main HTML page from static assets
+func serveHome(c *gin.Context) {
+	// Read index.html from embedded assets
+	data, err := webAssets.ReadFile("assets/index.html")
+	if err != nil {
+		// ERROR: Failed to load index.html from assets
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load index.html"})
+		return
+	}
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(http.StatusOK, string(data))
+}
+
+// serveSTT serves the speech-to-text HTML page from static assets
+func serveSTT(c *gin.Context) {
+	// Read stt.html from embedded assets
+	data, err := webAssets.ReadFile("assets/stt.html")
+	if err != nil {
+		// ERROR: Failed to load stt.html from assets
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to load stt.html"})
+		return
+	}
+	c.Header("Content-Type", "text/html; charset=utf-8")
+	c.String(http.StatusOK, string(data))
+}
+
+// handleSTT processes speech-to-text requests by calling the speaches.ai server
+func handleSTT(c *gin.Context) {
+	// Get language and model from form data
+	language := c.DefaultPostForm("language", "en")
+	model := c.DefaultPostForm("model", "standard")
+
+	// Get the audio file from the form
+	file, err := c.FormFile("audio")
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "audio file is required"})
+		return
+	}
+
+	// Validate language
+	validLanguages := map[string]bool{
+		"en": true, "es": true, "fr": true, "de": true, "it": true,
+		"pt": true, "ja": true, "ko": true, "zh": true,
+	}
+	if !validLanguages[language] {
+		language = "en"
+	}
+
+	// Validate model
+	validModels := map[string]bool{
+		"fast": true, "standard": true, "accurate": true,
+	}
+	if !validModels[model] {
+		model = "standard"
+	}
+
+	// Read the audio file
+	src, err := file.Open()
+	if err != nil {
+		// ERROR: Failed to open uploaded audio file
+		c.JSON(http.StatusBadRequest, gin.H{"error": "failed to open audio file"})
+		return
+	}
+	defer src.Close()
+
+	audioData, err := io.ReadAll(src)
+	if err != nil {
+		// ERROR: Failed to read audio file data
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to read audio file"})
+		return
+	}
+
+	// Create multipart request for speaches.ai
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add audio file to multipart request (field name must be "file")
+	part, err := writer.CreateFormFile("file", file.Filename)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create form file"})
+		return
+	}
+
+	_, err = part.Write(audioData)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to write audio data"})
+		return
+	}
+
+	// Add language field
+	writer.WriteField("language", language)
+
+	// Add model field - map quality to a model identifier
+	modelValue := "whisper-1" // default model
+	writer.WriteField("model", modelValue)
+
+	writer.Close()
+
+	// Call the speaches.ai server
+	speachesBaseURL := os.Getenv("SPEACHES_URL")
+	if speachesBaseURL == "" {
+		speachesBaseURL = "http://localhost:8000"
+	}
+	speachesURL := speachesBaseURL + "/v1/audio/transcriptions"
+
+	req, err := http.NewRequest("POST", speachesURL, body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create request"})
+		return
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		// ERROR: Failed to connect to speaches.ai server
+		c.JSON(http.StatusServiceUnavailable, gin.H{"error": "speaches.ai server is not available. Make sure it's running on localhost:8000"})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Check response status
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		errorMsg := string(bodyBytes)
+
+		// Check if error is about missing model and try to download it
+		if bytes.Contains(bodyBytes, []byte("is not installed locally")) || (bytes.Contains(bodyBytes, []byte("Model")) && bytes.Contains(bodyBytes, []byte("not found"))) {
+			// Try to download the model
+			downloadURL := speachesBaseURL + "/v1/models/whisper-1"
+			downloadResp, downloadErr := http.Post(downloadURL, "application/json", nil)
+			if downloadErr == nil {
+				downloadResp.Body.Close()
+
+				// Retry the transcription request after downloading
+				// Recreate the request body since the previous one was consumed
+				body2 := &bytes.Buffer{}
+				writer2 := multipart.NewWriter(body2)
+
+				part2, _ := writer2.CreateFormFile("file", file.Filename)
+				part2.Write(audioData)
+
+				writer2.WriteField("language", language)
+				writer2.WriteField("model", "whisper-1")
+				writer2.Close()
+
+				req2, err2 := http.NewRequest("POST", speachesURL, body2)
+				if err2 == nil {
+					req2.Header.Set("Content-Type", writer2.FormDataContentType())
+
+					resp2, err3 := client.Do(req2)
+					if err3 == nil {
+						defer resp2.Body.Close()
+
+						if resp2.StatusCode == http.StatusOK {
+							// Success! Parse and return the response
+							var result struct {
+								Text string `json:"text"`
+							}
+
+							json.NewDecoder(resp2.Body).Decode(&result)
+							c.JSON(http.StatusOK, gin.H{"text": result.Text})
+							return
+						}
+					}
+				}
+			}
+		}
+
+		// If we get here, return the original error
+		// ERROR: speaches.ai server returned an error
+		c.JSON(resp.StatusCode, gin.H{"error": "speaches.ai server error: " + errorMsg})
+		return
+	}
+
+	// Parse the response
+	var result struct {
+		Text string `json:"text"`
+	}
+
+	err = json.NewDecoder(resp.Body).Decode(&result)
+	if err != nil {
+		// ERROR: Failed to decode speaches.ai response
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to decode transcription response"})
+		return
+	}
+
+	// Return the transcribed text
+	c.JSON(http.StatusOK, gin.H{"text": result.Text})
 }

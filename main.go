@@ -66,19 +66,37 @@ func handleTTS(c *gin.Context) {
 	// Validate voice based on model
 	kokoroVoices := map[string]bool{
 		// American Female
-		"af_nova":  true,
-		"af_sarah": true,
-		"af_bella": true,
-		"af_heart": true,
+		"af_nova":   true,
+		"af_sarah":  true,
+		"af_bella":  true,
+		"af_heart":  true,
+		"af_aoede":  true,
+		"af_jessica": true,
+		"af_kore":   true,
+		"af_nicole": true,
+		"af_river":  true,
+		"af_sky":    true,
+		"af_alloy":  true,
 		// American Male
-		"am_adam": true,
-		"am_echo": true,
-		"am_liam": true,
-		"am_onyx": true,
-		// British
-		"bf_alice":  true,
+		"am_adam":    true,
+		"am_echo":    true,
+		"am_liam":    true,
+		"am_onyx":    true,
+		"am_michael": true,
+		"am_eric":    true,
+		"am_fenrir":  true,
+		"am_puck":    true,
+		"am_santa":   true,
+		// British Female
+		"bf_alice":     true,
+		"bf_emma":      true,
+		"bf_isabella":  true,
+		"bf_lily":      true,
+		// British Male
 		"bm_fable":  true,
 		"bm_george": true,
+		"bm_daniel": true,
+		"bm_lewis":  true,
 	}
 
 	piperVoices := map[string]bool{
@@ -485,18 +503,37 @@ func serveHome(c *gin.Context) {
 					{ value: 'af_nova', label: 'Nova (Neutral)' },
 					{ value: 'af_sarah', label: 'Sarah (Clear)' },
 					{ value: 'af_bella', label: 'Bella (Warm)' },
-					{ value: 'af_heart', label: 'Heart (Expressive)' }
+					{ value: 'af_heart', label: 'Heart (Expressive)' },
+					{ value: 'af_aoede', label: 'Aoede (Bright)' },
+					{ value: 'af_jessica', label: 'Jessica (Smooth)' },
+					{ value: 'af_kore', label: 'Kore (Dynamic)' },
+					{ value: 'af_nicole', label: 'Nicole (Natural)' },
+					{ value: 'af_river', label: 'River (Calm)' },
+					{ value: 'af_sky', label: 'Sky (Gentle)' },
+					{ value: 'af_alloy', label: 'Alloy (Balanced)' }
 				],
 				'American Male': [
 					{ value: 'am_adam', label: 'Adam (Friendly)' },
 					{ value: 'am_echo', label: 'Echo (Deep)' },
 					{ value: 'am_liam', label: 'Liam (Professional)' },
-					{ value: 'am_onyx', label: 'Onyx (Commanding)' }
+					{ value: 'am_onyx', label: 'Onyx (Commanding)' },
+					{ value: 'am_michael', label: 'Michael (Energetic)' },
+					{ value: 'am_eric', label: 'Eric (Smooth)' },
+					{ value: 'am_fenrir', label: 'Fenrir (Intense)' },
+					{ value: 'am_puck', label: 'Puck (Playful)' },
+					{ value: 'am_santa', label: 'Santa (Jolly)' }
 				],
-				'British': [
-					{ value: 'bf_alice', label: 'Alice (Female)' },
-					{ value: 'bm_fable', label: 'Fable (Male)' },
-					{ value: 'bm_george', label: 'George (Male)' }
+				'British Female': [
+					{ value: 'bf_alice', label: 'Alice (Posh)' },
+					{ value: 'bf_emma', label: 'Emma (Refined)' },
+					{ value: 'bf_isabella', label: 'Isabella (Elegant)' },
+					{ value: 'bf_lily', label: 'Lily (Sweet)' }
+				],
+				'British Male': [
+					{ value: 'bm_fable', label: 'Fable (Theatrical)' },
+					{ value: 'bm_george', label: 'George (Distinguished)' },
+					{ value: 'bm_daniel', label: 'Daniel (Smooth)' },
+					{ value: 'bm_lewis', label: 'Lewis (Rich)' }
 				]
 			},
 			'tts-1-piper': {

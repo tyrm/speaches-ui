@@ -25,6 +25,9 @@
 					<li class="nav-item">
 						<a class="nav-link {{if eq .Page "stt"}}active{{end}}" href="/stt">Speech to Text</a>
 					</li>
+					<li class="nav-item">
+						<button id="themeToggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+					</li>
 				</ul>
 			</div>
 		</div>
@@ -51,6 +54,42 @@
 
 	<!-- Bootstrap JS -->
 	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+
+	<!-- Dark Mode Toggle -->
+	<script>
+		// Initialize theme from localStorage or system preference
+		function initTheme() {
+			const savedTheme = localStorage.getItem('theme');
+			const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+			const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+
+			setTheme(theme);
+		}
+
+		// Set theme and update UI
+		function setTheme(theme) {
+			if (theme === 'dark') {
+				document.documentElement.setAttribute('data-theme', 'dark');
+				document.getElementById('themeToggle').textContent = '☀️';
+				localStorage.setItem('theme', 'dark');
+			} else {
+				document.documentElement.removeAttribute('data-theme');
+				document.getElementById('themeToggle').textContent = '🌙';
+				localStorage.setItem('theme', 'light');
+			}
+		}
+
+		// Toggle theme
+		document.getElementById('themeToggle').addEventListener('click', function() {
+			const currentTheme = document.documentElement.getAttribute('data-theme');
+			const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+			setTheme(newTheme);
+		});
+
+		// Initialize on page load
+		initTheme();
+	</script>
+
 	{{if .ScriptFile}}
 		<script src="{{.ScriptFile}}"></script>
 	{{end}}

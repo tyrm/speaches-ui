@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{{.Title}}</title>
+	<!-- Bootstrap 5.3 CSS -->
+	<link href="/assets/css/bootstrap.min.css" rel="stylesheet">
+	<!-- App Styles -->
+	<link href="/assets/css/style.css" rel="stylesheet">
+</head>
+<body>
+	<!-- Navigation Bar -->
+	<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+		<div class="container-fluid">
+			<a class="navbar-brand" href="/">🍑 Speaches UI</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+				<span class="navbar-toggler-icon"></span>
+			</button>
+			<div class="collapse navbar-collapse" id="navbarNav">
+				<ul class="navbar-nav ms-auto">
+					<li class="nav-item">
+						<a class="nav-link {{if eq .Page "tts"}}active{{end}}" href="/">Text to Speech</a>
+					</li>
+					<li class="nav-item">
+						<a class="nav-link {{if eq .Page "stt"}}active{{end}}" href="/stt">Speech to Text</a>
+					</li>
+					<li class="nav-item">
+						<button id="themeToggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+					</li>
+				</ul>
+			</div>
+		</div>
+	</nav>
+
+	<!-- Hero Section -->
+	<section class="hero-section">
+		<div class="container">
+			<h1>{{.HeroTitle}}</h1>
+			<p>{{.HeroDescription}}</p>
+		</div>
+	</section>
+
+	<!-- Main Content -->
+	<div class="container">
+		<div class="container-main" id="{{.ContentID}}">
+			{{if eq .Page "tts"}}
+				{{template "tts-content" .}}
+			{{else if eq .Page "stt"}}
+				{{template "stt-content" .}}
+			{{end}}
+		</div>
+	</div>
+
+	<!-- Bootstrap JS -->
+	<script src="/assets/js/bootstrap.bundle.min.js"></script>
+
+	<!-- Dark Mode Toggle -->
+	<script>
+		// Get current theme mode (light, dark, or system)
+		function getCurrentMode() {
+			return localStorage.getItem('themeMode') || 'system';
+		}
+
+		// Get effective theme based on mode and system preference
+		function getEffectiveTheme() {
+			const mode = getCurrentMode();
+			if (mode === 'system') {
+				return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+			}
+			return mode;
+		}
+
+		// Initialize theme from localStorage or system preference
+		function initTheme() {
+			applyTheme();
+			updateToggleButton();
+
+			// Listen for system theme changes
+			window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+				if (getCurrentMode() === 'system') {
+					applyTheme();
+				}
+			});
+		}
+
+		// Apply the effective theme to the DOM
+		function applyTheme() {
+			const effectiveTheme = getEffectiveTheme();
+			if (effectiveTheme === 'dark') {
+				document.documentElement.setAttribute('data-theme', 'dark');
+			} else {
+				document.documentElement.removeAttribute('data-theme');
+			}
+		}
+
+		// Update toggle button text based on current mode
+		function updateToggleButton() {
+			const mode = getCurrentMode();
+			const button = document.getElementById('themeToggle');
+
+			if (mode === 'light') {
+				button.textContent = '☀️';
+				button.title = 'Light mode (click to cycle)';
+			} else if (mode === 'dark') {
+				button.textContent = '🌑';
+				button.title = 'Dark mode (click to cycle)';
+			} else {
+				button.textContent = '🖥️';
+				button.title = 'System mode (click to cycle)';
+			}
+		}
+
+		// Cycle through themes: light → dark → system → light
+		function cycleTheme() {
+			const currentMode = getCurrentMode();
+			let newMode;
+
+			if (currentMode === 'light') {
+				newMode = 'dark';
+			} else if (currentMode === 'dark') {
+				newMode = 'system';
+			} else {
+				newMode = 'light';
+			}
+
+			localStorage.setItem('themeMode', newMode);
+			applyTheme();
+			updateToggleButton();
+		}
+
+		// Toggle theme
+		document.getElementById('themeToggle').addEventListener('click', cycleTheme);
+
+		// Initialize on page load
+		initTheme();
+	</script>
+
+	{{if .ScriptFile}}
+		<script src="{{.ScriptFile}}"></script>
+	{{end}}
+</body>
+</html>

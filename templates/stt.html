@@ -1,0 +1,261 @@
+{{define "stt-content"}}
+<!-- Audio Upload Section -->
+<div class="upload-controls">
+	<!-- Audio File Input -->
+	<div class="audio-input-section">
+		<input type="file" id="audioFileInput" accept="audio/*">
+		<label for="audioFileInput" class="file-input-label">📁 Choose Audio File</label>
+		<div style="flex: 1; display: flex; align-items: center;">
+			<span class="audio-file-name" id="fileName">No file selected</span>
+		</div>
+	</div>
+</div>
+
+<!-- Audio Player for playback -->
+<div id="playerContainer" class="player-container" style="display: none;">
+	<div class="player-controls">
+		<button id="playBtn" class="play-btn">▶ Play</button>
+		<div class="progress-container">
+			<input type="range" id="progressBar" class="progress-bar" min="0" value="0">
+			<span id="timeDisplay" class="time-display">0:00 / 0:00</span>
+		</div>
+	</div>
+</div>
+
+<!-- Hidden Audio Element -->
+<audio id="audioPlayer"></audio>
+
+<!-- STT Form -->
+<form id="sttForm">
+	<div class="form-layout">
+		<div class="form-left">
+			<div class="form-group">
+				<label for="transcriptOutput">Transcribed Text:</label>
+				<textarea
+					class="form-control"
+					id="transcriptOutput"
+					placeholder="Transcription will appear here..."
+					readonly></textarea>
+			</div>
+		</div>
+		<div class="form-right">
+			<div class="form-group">
+				<label for="languageSelect">Select Language:</label>
+				<select class="form-control" id="languageSelect">
+					<option value="en">English</option>
+					<option value="es">Spanish</option>
+					<option value="fr">French</option>
+					<option value="de">German</option>
+					<option value="it">Italian</option>
+					<option value="pt">Portuguese</option>
+					<option value="ja">Japanese</option>
+					<option value="ko">Korean</option>
+					<option value="zh">Chinese</option>
+				</select>
+			</div>
+			<div class="form-group">
+				<label for="modelSelect">Select Model:</label>
+				<select class="form-control" id="modelSelect">
+					<option value="fast">Fast (Lower accuracy)</option>
+					<option value="standard">Standard (Balanced)</option>
+					<option value="accurate">Accurate (Higher quality)</option>
+				</select>
+			</div>
+			<button type="button" class="btn btn-transcribe" id="transcribeBtn">
+				🎯 Transcribe
+			</button>
+			<div id="statusMessage"></div>
+			<div id="errorAlert" class="alert alert-danger" role="alert"></div>
+			<div id="successAlert" class="alert alert-success" role="alert"></div>
+		</div>
+	</div>
+</form>
+
+<script>
+	const audioFileInput = document.getElementById('audioFileInput');
+	const fileName = document.getElementById('fileName');
+	const transcribeBtn = document.getElementById('transcribeBtn');
+	const transcriptOutput = document.getElementById('transcriptOutput');
+	const languageSelect = document.getElementById('languageSelect');
+	const modelSelect = document.getElementById('modelSelect');
+	const audioPlayer = document.getElementById('audioPlayer');
+	const playerContainer = document.getElementById('playerContainer');
+	const playBtn = document.getElementById('playBtn');
+	const progressBar = document.getElementById('progressBar');
+	const timeDisplay = document.getElementById('timeDisplay');
+	const errorAlert = document.getElementById('errorAlert');
+	const successAlert = document.getElementById('successAlert');
+	const statusMessage = document.getElementById('statusMessage');
+
+	let audioUrl = null;
+	let selectedAudioBlob = null;
+
+	// File input handler
+	audioFileInput.addEventListener('change', function(e) {
+		const file = e.target.files[0];
+		if (file) {
+			fileName.textContent = file.name;
+			selectedAudioBlob = file;
+
+			if (audioUrl) {
+				URL.revokeObjectURL(audioUrl);
+			}
+			audioUrl = URL.createObjectURL(file);
+			audioPlayer.src = audioUrl;
+			playerContainer.style.display = 'block';
+			resetPlayer();
+
+			hideAllAlerts();
+			showSuccess('Audio file loaded successfully!');
+		}
+	});
+
+	// Load saved preferences from localStorage
+	function loadPreferences() {
+		const savedLanguage = localStorage.getItem('stt-language');
+		const savedModel = localStorage.getItem('stt-model');
+
+		if (savedLanguage) {
+			languageSelect.value = savedLanguage;
+		}
+		if (savedModel) {
+			modelSelect.value = savedModel;
+		}
+	}
+
+	// Save preferences
+	function savePreferences() {
+		localStorage.setItem('stt-language', languageSelect.value);
+		localStorage.setItem('stt-model', modelSelect.value);
+	}
+
+	// Initialize
+	loadPreferences();
+
+	languageSelect.addEventListener('change', savePreferences);
+	modelSelect.addEventListener('change', savePreferences);
+
+	// Handle transcribe button click
+	transcribeBtn.addEventListener('click', async function() {
+		if (!selectedAudioBlob) {
+			showError('Please select an audio file');
+			return;
+		}
+
+		transcribeBtn.disabled = true;
+		transcribeBtn.textContent = '🎯 Transcribing...';
+		statusMessage.textContent = 'Processing audio...';
+		hideAllAlerts();
+
+		try {
+			const formData = new FormData();
+			formData.append('audio', selectedAudioBlob);
+			formData.append('language', languageSelect.value);
+			formData.append('model', modelSelect.value);
+
+			const response = await fetch('/api/stt', {
+				method: 'POST',
+				body: formData
+			});
+
+			if (!response.ok) {
+				const errorData = await response.json();
+				throw new Error(errorData.error || 'Failed to transcribe audio');
+			}
+
+			const result = await response.json();
+			transcriptOutput.value = result.text || '';
+			statusMessage.textContent = '';
+			showSuccess('Transcription completed successfully!');
+
+		} catch (error) {
+			console.error('STT Error:', error);
+			showError('Error: ' + error.message);
+			statusMessage.textContent = '';
+		} finally {
+			transcribeBtn.disabled = false;
+			transcribeBtn.textContent = '🎯 Transcribe';
+		}
+	});
+
+	// Play/Pause handler
+	playBtn.addEventListener('click', function() {
+		if (audioPlayer.paused) {
+			audioPlayer.play();
+		} else {
+			audioPlayer.pause();
+		}
+		updatePlayButton();
+	});
+
+	audioPlayer.addEventListener('play', updatePlayButton);
+	audioPlayer.addEventListener('pause', updatePlayButton);
+
+	function updatePlayButton() {
+		if (audioPlayer.paused) {
+			playBtn.textContent = '▶ Play';
+		} else {
+			playBtn.textContent = '⏸ Pause';
+		}
+	}
+
+	// Progress bar seeking
+	progressBar.addEventListener('input', function() {
+		if (audioPlayer.duration) {
+			audioPlayer.currentTime = (progressBar.value / 100) * audioPlayer.duration;
+		}
+	});
+
+	audioPlayer.addEventListener('timeupdate', function() {
+		if (audioPlayer.duration) {
+			progressBar.value = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+		}
+		updateTimeDisplay();
+	});
+
+	audioPlayer.addEventListener('loadedmetadata', function() {
+		progressBar.max = 100;
+		updateTimeDisplay();
+	});
+
+	audioPlayer.addEventListener('ended', function() {
+		resetPlayer();
+	});
+
+	function resetPlayer() {
+		progressBar.value = 0;
+		updatePlayButton();
+		updateTimeDisplay();
+	}
+
+	function updateTimeDisplay() {
+		const current = formatTime(audioPlayer.currentTime);
+		const duration = formatTime(audioPlayer.duration);
+		timeDisplay.textContent = current + ' / ' + duration;
+	}
+
+	function formatTime(seconds) {
+		if (!seconds || isNaN(seconds)) return '0:00';
+		const mins = Math.floor(seconds / 60);
+		const secs = Math.floor(seconds % 60);
+		return mins + ':' + secs.toString().padStart(2, '0');
+	}
+
+	function showError(message) {
+		errorAlert.textContent = message;
+		errorAlert.classList.add('show');
+		successAlert.classList.remove('show');
+	}
+
+	function showSuccess(message) {
+		successAlert.textContent = message;
+		successAlert.classList.add('show');
+		errorAlert.classList.remove('show');
+	}
+
+	function hideAllAlerts() {
+		errorAlert.classList.remove('show');
+		successAlert.classList.remove('show');
+	}
+</script>
+{{end}}

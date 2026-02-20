@@ -79,6 +79,9 @@ func main() {
 	// Models endpoint for installing models
 	router.POST("/api/models/install", handleInstallModel)
 
+	// Voices endpoint for getting available voices for a model
+	router.GET("/api/voices/*modelId", handleGetVoices)
+
 	// Start the server on port 5420
 	// INFO: Server listening on http://localhost:5420
 	router.Run(":5420")
@@ -369,6 +372,74 @@ func handleInstallModel(c *gin.Context) {
 		"success": true,
 		"message": "Model installed successfully",
 	})
+}
+
+// handleGetVoices returns available voices for a given model
+func handleGetVoices(c *gin.Context) {
+	modelID := c.Param("modelId")
+
+	type Voice struct {
+		Value string `json:"value"`
+		Label string `json:"label"`
+	}
+
+	// Determine if Kokoro or Piper based on model ID
+	var voices gin.H
+
+	if strings.Contains(modelID, "Kokoro") {
+		voices = gin.H{
+			"American Female": []Voice{
+				{Value: "af_nova", Label: "Nova (Neutral)"},
+				{Value: "af_sarah", Label: "Sarah (Clear)"},
+				{Value: "af_bella", Label: "Bella (Warm)"},
+				{Value: "af_heart", Label: "Heart (Expressive)"},
+				{Value: "af_aoede", Label: "Aoede (Bright)"},
+				{Value: "af_jessica", Label: "Jessica (Smooth)"},
+				{Value: "af_kore", Label: "Kore (Dynamic)"},
+				{Value: "af_nicole", Label: "Nicole (Natural)"},
+				{Value: "af_river", Label: "River (Calm)"},
+				{Value: "af_sky", Label: "Sky (Gentle)"},
+				{Value: "af_alloy", Label: "Alloy (Balanced)"},
+			},
+			"American Male": []Voice{
+				{Value: "am_adam", Label: "Adam (Friendly)"},
+				{Value: "am_echo", Label: "Echo (Deep)"},
+				{Value: "am_liam", Label: "Liam (Professional)"},
+				{Value: "am_onyx", Label: "Onyx (Commanding)"},
+				{Value: "am_michael", Label: "Michael (Energetic)"},
+				{Value: "am_eric", Label: "Eric (Smooth)"},
+				{Value: "am_fenrir", Label: "Fenrir (Intense)"},
+				{Value: "am_puck", Label: "Puck (Playful)"},
+				{Value: "am_santa", Label: "Santa (Jolly)"},
+				{Value: "am_liam", Label: "Lewis (Rich)"},
+			},
+			"British Female": []Voice{
+				{Value: "bf_alice", Label: "Alice (Posh)"},
+				{Value: "bf_emma", Label: "Emma (Refined)"},
+				{Value: "bf_isabella", Label: "Isabella (Elegant)"},
+				{Value: "bf_lily", Label: "Lily (Sweet)"},
+			},
+			"British Male": []Voice{
+				{Value: "bm_fable", Label: "Fable (Theatrical)"},
+				{Value: "bm_george", Label: "George (Distinguished)"},
+				{Value: "bm_daniel", Label: "Daniel (Smooth)"},
+				{Value: "bm_lewis", Label: "Lewis (Rich)"},
+			},
+		}
+	} else if strings.Contains(modelID, "piper") {
+		voices = gin.H{
+			"voices": []Voice{
+				{Value: "en_US-ryan-high", Label: "Ryan (High Quality)"},
+				{Value: "en_US-ryan-medium", Label: "Ryan (Medium Quality)"},
+				{Value: "en_US-ryan-low", Label: "Ryan (Low Latency)"},
+				{Value: "en_US-hfc_female-medium", Label: "HFC Female"},
+				{Value: "en_US-amy-medium", Label: "Amy (Medium)"},
+				{Value: "en_US-lessac-high", Label: "Lessac (High Quality)"},
+			},
+		}
+	}
+
+	c.JSON(http.StatusOK, voices)
 }
 
 // handleTTS processes text-to-speech requests by calling the speaches.ai server

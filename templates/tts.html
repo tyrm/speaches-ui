@@ -30,8 +30,7 @@
 			<div class="form-group">
 				<label for="modelSelect">Select Model:</label>
 				<select class="form-control" id="modelSelect">
-					<option value="tts-1">Kokoro (Neural TTS)</option>
-					<option value="tts-1-piper">Piper (Fast TTS)</option>
+					<option value="">Loading models...</option>
 				</select>
 			</div>
 			<div class="form-group">
@@ -65,115 +64,124 @@
 	const statusMessage = document.getElementById('statusMessage');
 
 	let audioUrl = null;
+	let installedModels = [];
 
-	// Voice options for each model
-	const voiceOptions = {
-		'tts-1': {
-			'American Female': [
-				{ value: 'af_nova', label: 'Nova (Neutral)' },
-				{ value: 'af_sarah', label: 'Sarah (Clear)' },
-				{ value: 'af_bella', label: 'Bella (Warm)' },
-				{ value: 'af_heart', label: 'Heart (Expressive)' },
-				{ value: 'af_aoede', label: 'Aoede (Bright)' },
-				{ value: 'af_jessica', label: 'Jessica (Smooth)' },
-				{ value: 'af_kore', label: 'Kore (Dynamic)' },
-				{ value: 'af_nicole', label: 'Nicole (Natural)' },
-				{ value: 'af_river', label: 'River (Calm)' },
-				{ value: 'af_sky', label: 'Sky (Gentle)' },
-				{ value: 'af_alloy', label: 'Alloy (Balanced)' }
-			],
-			'American Male': [
-				{ value: 'am_adam', label: 'Adam (Friendly)' },
-				{ value: 'am_echo', label: 'Echo (Deep)' },
-				{ value: 'am_liam', label: 'Liam (Professional)' },
-				{ value: 'am_onyx', label: 'Onyx (Commanding)' },
-				{ value: 'am_michael', label: 'Michael (Energetic)' },
-				{ value: 'am_eric', label: 'Eric (Smooth)' },
-				{ value: 'am_fenrir', label: 'Fenrir (Intense)' },
-				{ value: 'am_puck', label: 'Puck (Playful)' },
-				{ value: 'am_santa', label: 'Santa (Jolly)' },
-				{ value: 'am_liam', label: 'Lewis (Rich)' }
-			],
-			'British Female': [
-				{ value: 'bf_alice', label: 'Alice (Posh)' },
-				{ value: 'bf_emma', label: 'Emma (Refined)' },
-				{ value: 'bf_isabella', label: 'Isabella (Elegant)' },
-				{ value: 'bf_lily', label: 'Lily (Sweet)' }
-			],
-			'British Male': [
-				{ value: 'bm_fable', label: 'Fable (Theatrical)' },
-				{ value: 'bm_george', label: 'George (Distinguished)' },
-				{ value: 'bm_daniel', label: 'Daniel (Smooth)' },
-				{ value: 'bm_lewis', label: 'Lewis (Rich)' }
-			]
-		},
-		'tts-1-piper': {
-			'Ryan (US Male)': [
-				{ value: 'en_US-ryan-high', label: 'High Quality' },
-				{ value: 'en_US-ryan-medium', label: 'Medium Quality' },
-				{ value: 'en_US-ryan-low', label: 'Low Quality' }
-			],
-			'US Female Voices': [
-				{ value: 'en_US-hfc_female-medium', label: 'HFC Female' },
-				{ value: 'en_US-amy-medium', label: 'Amy Medium' },
-				{ value: 'en_US-amy-low', label: 'Amy Low' },
-				{ value: 'en_US-kathleen-low', label: 'Kathleen' },
-				{ value: 'en_US-kristin-medium', label: 'Kristin' },
-				{ value: 'en_US-ljspeech-high', label: 'LJ Speech High' },
-				{ value: 'en_US-ljspeech-medium', label: 'LJ Speech Medium' }
-			],
-			'US Male Voices': [
-				{ value: 'en_US-hfc_male-medium', label: 'HFC Male' },
-				{ value: 'en_US-lessac-high', label: 'Lessac High' },
-				{ value: 'en_US-lessac-medium', label: 'Lessac Medium' },
-				{ value: 'en_US-lessac-low', label: 'Lessac Low' },
-				{ value: 'en_US-danny-low', label: 'Danny' },
-				{ value: 'en_US-joe-medium', label: 'Joe' },
-				{ value: 'en_US-john-medium', label: 'John' },
-				{ value: 'en_US-bryce-medium', label: 'Bryce' },
-				{ value: 'en_US-kusal-medium', label: 'Kusal' },
-				{ value: 'en_US-norman-medium', label: 'Norman' }
-			],
-			'British Voices': [
-				{ value: 'en_GB-alan-medium', label: 'Alan Medium' },
-				{ value: 'en_GB-alan-low', label: 'Alan Low' },
-				{ value: 'en_GB-southern_english_female-low', label: 'Southern Female' },
-				{ value: 'en_GB-alba-medium', label: 'Alba' },
-				{ value: 'en_GB-aru-medium', label: 'Aru' },
-				{ value: 'en_GB-cori-high', label: 'Cori High' },
-				{ value: 'en_GB-cori-medium', label: 'Cori Medium' },
-				{ value: 'en_GB-jenny_dioco-medium', label: 'Jenny Dioco' },
-				{ value: 'en_GB-northern_english_male-medium', label: 'Northern Male' },
-				{ value: 'en_GB-semaine-medium', label: 'Semaine' },
-				{ value: 'en_GB-vctk-medium', label: 'VCTK' }
-			]
-		}
-	};
+	// Error/Success handlers (defined early so they can be used by other functions)
+	function showError(message) {
+		errorAlert.textContent = message;
+		errorAlert.classList.add('show');
+		successAlert.classList.remove('show');
+	}
 
-	// Populate voice dropdown based on selected model
-	function updateVoiceOptions() {
+	function showSuccess(message) {
+		successAlert.textContent = message;
+		successAlert.classList.add('show');
+		errorAlert.classList.remove('show');
+	}
+
+	function hideAllAlerts() {
+		errorAlert.classList.remove('show');
+		successAlert.classList.remove('show');
+	}
+
+	// Fetch voices for selected model
+	async function updateVoiceOptions() {
 		const selectedModel = modelSelect.value;
-		const voices = voiceOptions[selectedModel];
 		const previousVoice = voiceSelect.value;
 
-		voiceSelect.innerHTML = '';
+		voiceSelect.innerHTML = '<option value="">Loading voices...</option>';
 
-		for (const [group, voiceList] of Object.entries(voices)) {
-			const optgroup = document.createElement('optgroup');
-			optgroup.label = group;
+		try {
+			const response = await fetch(`/api/voices/${encodeURIComponent(selectedModel)}`);
+			const voices = await response.json();
 
-			voiceList.forEach(voice => {
-				const option = document.createElement('option');
-				option.value = voice.value;
-				option.textContent = voice.label;
-				optgroup.appendChild(option);
-			});
+			voiceSelect.innerHTML = '';
 
-			voiceSelect.appendChild(optgroup);
+			// Handle both grouped (Kokoro) and flat (Piper) voice formats
+			const entries = Object.entries(voices);
+
+			if (entries.length === 0) {
+				voiceSelect.innerHTML = '<option value="">No voices available</option>';
+				return;
+			}
+
+			// Check if this is grouped format (Kokoro with categories) or flat format (Piper)
+			const firstValue = entries[0][1];
+			const isGrouped = Array.isArray(firstValue) && firstValue[0] && typeof firstValue[0] === 'object' && 'value' in firstValue[0];
+
+			if (isGrouped) {
+				// Grouped format (Kokoro)
+				for (const [group, voiceList] of entries) {
+					const optgroup = document.createElement('optgroup');
+					optgroup.label = group;
+
+					voiceList.forEach(voice => {
+						const option = document.createElement('option');
+						option.value = voice.value;
+						option.textContent = voice.label;
+						optgroup.appendChild(option);
+					});
+
+					voiceSelect.appendChild(optgroup);
+				}
+			} else {
+				// Flat format (Piper)
+				for (const [key, voice] of entries) {
+					if (Array.isArray(voice)) {
+						voice.forEach(v => {
+							const option = document.createElement('option');
+							option.value = v.value;
+							option.textContent = v.label;
+							voiceSelect.appendChild(option);
+						});
+					}
+				}
+			}
+
+			if (previousVoice && Array.from(voiceSelect.options).some(opt => opt.value === previousVoice)) {
+				voiceSelect.value = previousVoice;
+			}
+		} catch (error) {
+			console.error('Error fetching voices:', error);
+			voiceSelect.innerHTML = '<option value="">Error loading voices</option>';
+		}
+	}
+
+	// Fetch installed models from API
+	async function fetchInstalledModels() {
+		try {
+			const response = await fetch('/api/models');
+			const data = await response.json();
+			console.log('Models API response:', data);
+			installedModels = data.tts || [];
+			console.log('Installed TTS models:', installedModels);
+			populateModelDropdown();
+			restorePreferences();
+		} catch (error) {
+			console.error('Error fetching models:', error);
+			modelSelect.innerHTML = '<option value="">Error loading models</option>';
+			showError('Could not load installed models. Check browser console for details.');
+		}
+	}
+
+	// Populate model dropdown with installed models
+	function populateModelDropdown() {
+		modelSelect.innerHTML = '';
+
+		if (installedModels.length === 0) {
+			modelSelect.innerHTML = '<option value="">No TTS models installed</option>';
+			return;
 		}
 
-		if (previousVoice && Array.from(voiceSelect.options).some(opt => opt.value === previousVoice)) {
-			voiceSelect.value = previousVoice;
+		installedModels.forEach(model => {
+			const option = document.createElement('option');
+			option.value = model.id;
+			option.textContent = model.name;
+			modelSelect.appendChild(option);
+		});
+
+		if (modelSelect.options.length > 0) {
+			modelSelect.value = modelSelect.options[0].value;
 		}
 	}
 
@@ -182,11 +190,21 @@
 		const savedModel = localStorage.getItem('tts-model');
 		const savedVoice = localStorage.getItem('tts-voice');
 
-		if (savedModel) {
+		if (savedModel && Array.from(modelSelect.options).some(opt => opt.value === savedModel)) {
 			modelSelect.value = savedModel;
 		}
 
 		return savedVoice;
+	}
+
+	// Restore preferences after models are loaded
+	function restorePreferences() {
+		const savedVoice = loadPreferences();
+		updateVoiceOptions();
+
+		if (savedVoice && Array.from(voiceSelect.options).some(opt => opt.value === savedVoice)) {
+			voiceSelect.value = savedVoice;
+		}
 	}
 
 	// Save preferences
@@ -198,13 +216,8 @@
 		localStorage.setItem('tts-voice', voiceSelect.value);
 	}
 
-	// Initialize
-	const savedVoice = loadPreferences();
-	updateVoiceOptions();
-
-	if (savedVoice && Array.from(voiceSelect.options).some(opt => opt.value === savedVoice)) {
-		voiceSelect.value = savedVoice;
-	}
+	// Initialize by fetching installed models
+	fetchInstalledModels();
 
 	modelSelect.addEventListener('change', function() {
 		saveModelPreference();
@@ -328,23 +341,6 @@
 		const mins = Math.floor(seconds / 60);
 		const secs = Math.floor(seconds % 60);
 		return mins + ':' + secs.toString().padStart(2, '0');
-	}
-
-	function showError(message) {
-		errorAlert.textContent = message;
-		errorAlert.classList.add('show');
-		successAlert.classList.remove('show');
-	}
-
-	function showSuccess(message) {
-		successAlert.textContent = message;
-		successAlert.classList.add('show');
-		errorAlert.classList.remove('show');
-	}
-
-	function hideAllAlerts() {
-		errorAlert.classList.remove('show');
-		successAlert.classList.remove('show');
 	}
 
 	// Shift+Enter to submit

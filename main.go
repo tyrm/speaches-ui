@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 )
@@ -33,7 +34,7 @@ var templates *template.Template
 func init() {
 	// Load all templates from embedded filesystem
 	var err error
-	templates, err = template.ParseFS(webAssets, "templates/base.html", "templates/tts.html", "templates/stt.html")
+	templates, err = template.ParseFS(webAssets, "templates/base.html", "templates/tts.html", "templates/stt.html", "templates/models.html", "templates/add-tts-models.html", "templates/add-stt-models.html")
 	if err != nil {
 		panic("Failed to load templates: " + err.Error())
 	}
@@ -54,15 +55,320 @@ func main() {
 	// Serve the speech-to-text page
 	router.GET("/stt", serveSTT)
 
+	// Serve the models page
+	router.GET("/models", serveModels)
+
+	// Serve the add TTS models page
+	router.GET("/add-tts-models", serveAddTTSModels)
+
+	// Serve the add STT models page
+	router.GET("/add-stt-models", serveAddSTTModels)
+
 	// TTS endpoint that calls speaches.ai server
 	router.POST("/api/tts", handleTTS)
 
 	// STT endpoint for speech-to-text requests
 	router.POST("/api/stt", handleSTT)
 
+	// Models endpoint for listing installed models
+	router.GET("/api/models", handleGetModels)
+
+	// Models endpoint for fetching registry models
+	router.GET("/api/models/registry", handleGetRegistryModels)
+
+	// Models endpoint for installing models
+	router.POST("/api/models/install", handleInstallModel)
+
 	// Start the server on port 5420
 	// INFO: Server listening on http://localhost:5420
 	router.Run(":5420")
+}
+
+// handleGetRegistryModels fetches available models from the registry
+func handleGetRegistryModels(c *gin.Context) {
+	speachesBaseURL := os.Getenv("SPEACHES_URL")
+	if speachesBaseURL == "" {
+		speachesBaseURL = "http://localhost:8000"
+	}
+
+	// Get installed models first
+	installedSet := make(map[string]bool)
+	modelsURL := speachesBaseURL + "/v1/models"
+	if resp, err := http.Get(modelsURL); err == nil {
+		defer resp.Body.Close()
+		if resp.StatusCode == http.StatusOK {
+			var modelsData struct {
+				Data []struct {
+					ID string `json:"id"`
+				} `json:"data"`
+			}
+			if json.NewDecoder(resp.Body).Decode(&modelsData) == nil {
+				for _, model := range modelsData.Data {
+					installedSet[model.ID] = true
+				}
+			}
+		}
+	}
+
+	// Fetch available models from the registry
+	registryModels := []gin.H{}
+	registryURL := speachesBaseURL + "/v1/registry"
+	if resp, err := http.Get(registryURL); err == nil && resp.StatusCode == http.StatusOK {
+		defer resp.Body.Close()
+		var registryData struct {
+			Data []struct {
+				ID          string `json:"id"`
+				Name        string `json:"name"`
+				Description string `json:"description"`
+				Type        string `json:"type"`
+			} `json:"data"`
+		}
+		if json.NewDecoder(resp.Body).Decode(&registryData) == nil {
+			for _, model := range registryData.Data {
+				// Determine type based on model ID if not explicitly set
+				modelType := model.Type
+				if modelType == "" {
+					if isSTTModel(model.ID) {
+						modelType = "stt"
+					} else {
+						modelType = "tts"
+					}
+				}
+
+				registryModels = append(registryModels, gin.H{
+					"id":          model.ID,
+					"name":        model.Name,
+					"description": model.Description,
+					"type":        modelType,
+				})
+			}
+		}
+	}
+
+	// If registry fetch failed, use fallback hardcoded list
+	if len(registryModels) == 0 {
+		registryModels = []gin.H{
+			{
+				"id":          "tts-1",
+				"name":        "Kokoro (Neural TTS)",
+				"description": "High-quality neural text-to-speech synthesis",
+				"type":        "tts",
+			},
+			{
+				"id":          "speaches-ai/piper-en_US-ryan-high",
+				"name":        "Piper - Ryan (High Quality)",
+				"description": "Fast, high-quality TTS with Ryan voice",
+				"type":        "tts",
+			},
+			{
+				"id":          "speaches-ai/piper-en_US-ryan-medium",
+				"name":        "Piper - Ryan (Medium Quality)",
+				"description": "Fast TTS with Ryan voice - balanced quality and speed",
+				"type":        "tts",
+			},
+			{
+				"id":          "speaches-ai/piper-en_US-ryan-low",
+				"name":        "Piper - Ryan (Low Latency)",
+				"description": "Fast TTS with Ryan voice - optimized for speed",
+				"type":        "tts",
+			},
+			{
+				"id":          "speaches-ai/piper-en_US-amy-medium",
+				"name":        "Piper - Amy (Female Voice)",
+				"description": "TTS with female voice - Amy variant",
+				"type":        "tts",
+			},
+			{
+				"id":          "speaches-ai/piper-en_US-hfc_female-medium",
+				"name":        "Piper - HFC Female (Female Voice)",
+				"description": "High-quality female voice TTS",
+				"type":        "tts",
+			},
+			{
+				"id":          "speaches-ai/piper-en_US-lessac-high",
+				"name":        "Piper - Lessac (High Quality)",
+				"description": "High-quality male voice TTS",
+				"type":        "tts",
+			},
+			{
+				"id":          "whisper-1",
+				"name":        "Whisper v1 (Speech to Text)",
+				"description": "OpenAI's Whisper model for accurate speech transcription",
+				"type":        "stt",
+			},
+		}
+	}
+
+	// Convert to response format
+	installedList := make([]string, 0, len(installedSet))
+	for modelID := range installedSet {
+		installedList = append(installedList, modelID)
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"models":    registryModels,
+		"installed": installedList,
+	})
+}
+
+// handleGetModels fetches installed models from the speaches.ai server
+func handleGetModels(c *gin.Context) {
+	speachesBaseURL := os.Getenv("SPEACHES_URL")
+	if speachesBaseURL == "" {
+		speachesBaseURL = "http://localhost:8000"
+	}
+	modelsURL := speachesBaseURL + "/v1/models"
+
+	resp, err := http.Get(modelsURL)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "speaches.ai server is not available",
+			"tts":   []interface{}{},
+			"stt":   []interface{}{},
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		c.JSON(http.StatusOK, gin.H{
+			"tts": []interface{}{},
+			"stt": []interface{}{},
+		})
+		return
+	}
+
+	var modelsData struct {
+		Data []struct {
+			ID      string `json:"id"`
+			Object  string `json:"object"`
+			Created int64  `json:"created"`
+			OwnedBy string `json:"owned_by"`
+		} `json:"data"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&modelsData); err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"tts": []interface{}{},
+			"stt": []interface{}{},
+		})
+		return
+	}
+
+	// Categorize models
+	ttsModels := []gin.H{}
+	sttModels := []gin.H{}
+
+	for _, model := range modelsData.Data {
+		modelInfo := gin.H{
+			"id":        model.ID,
+			"name":      formatModelName(model.ID),
+			"installed": true,
+			"type":      model.OwnedBy,
+		}
+
+		// Categorize based on model ID patterns
+		if isSTTModel(model.ID) {
+			sttModels = append(sttModels, modelInfo)
+		} else {
+			ttsModels = append(ttsModels, modelInfo)
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"tts": ttsModels,
+		"stt": sttModels,
+	})
+}
+
+// formatModelName formats a model ID to a readable name
+func formatModelName(modelID string) string {
+	// Remove common prefixes
+	name := modelID
+	if len(name) > 0 && name[0] == '/' {
+		name = name[1:]
+	}
+
+	// Handle specific model naming patterns
+	switch {
+	case name == "tts-1":
+		return "Kokoro (Neural TTS)"
+	case name == "speaches-ai/piper-en_US-ryan-medium", name == "speaches-ai/piper-en_US-ryan-high", name == "speaches-ai/piper-en_US-ryan-low":
+		return "Piper - Ryan (TTS)"
+	case name == "whisper-1":
+		return "Whisper v1 (Speech to Text)"
+	default:
+		// Replace hyphens and underscores with spaces for readability
+		readableName := name
+		readableName = strings.ReplaceAll(readableName, "_", " ")
+		readableName = strings.ReplaceAll(readableName, "-", " ")
+		// Capitalize words
+		parts := strings.Fields(readableName)
+		for i := range parts {
+			if len(parts[i]) > 0 {
+				parts[i] = strings.ToUpper(parts[i][:1]) + strings.ToLower(parts[i][1:])
+			}
+		}
+		return strings.Join(parts, " ")
+	}
+}
+
+// isSTTModel determines if a model is a speech-to-text model
+func isSTTModel(modelID string) bool {
+	return strings.Contains(modelID, "whisper") || strings.Contains(modelID, "speech") || strings.Contains(modelID, "transcription")
+}
+
+// handleInstallModel downloads and installs a model from the speaches.ai server
+func handleInstallModel(c *gin.Context) {
+	var req struct {
+		ModelID string `json:"model_id" binding:"required"`
+	}
+
+	if err := c.BindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "model_id is required"})
+		return
+	}
+
+	speachesBaseURL := os.Getenv("SPEACHES_URL")
+	if speachesBaseURL == "" {
+		speachesBaseURL = "http://localhost:8000"
+	}
+
+	// URL for installing the model
+	installURL := speachesBaseURL + "/v1/models/" + req.ModelID
+
+	// Make a POST request to install the model
+	resp, err := http.Post(installURL, "application/json", nil)
+	if err != nil {
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"error": "speaches.ai server is not available",
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "failed to read server response",
+		})
+		return
+	}
+
+	// Check if installation was successful
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
+		errorMsg := string(bodyBytes)
+		c.JSON(resp.StatusCode, gin.H{
+			"error": "Failed to install model: " + errorMsg,
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Model installed successfully",
+	})
 }
 
 // handleTTS processes text-to-speech requests by calling the speaches.ai server
@@ -301,6 +607,66 @@ func serveSTT(c *gin.Context) {
 	// Render base.html with stt.html content template included
 	if err := templates.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
 		// ERROR: Failed to render STT template
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to render page"})
+		return
+	}
+}
+
+// serveModels renders the Models page using templates
+func serveModels(c *gin.Context) {
+	data := TemplateData{
+		Title:            "🍑 Speaches UI - Models",
+		Page:             "models",
+		HeroTitle:        "📦 Installed Models",
+		HeroDescription:  "View and manage installed models for text-to-speech and speech-to-text",
+		ContentID:        "models",
+	}
+
+	c.Header("Content-Type", "text/html; charset=utf-8")
+
+	// Render base.html with models.html content template included
+	if err := templates.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
+		// ERROR: Failed to render models template
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to render page"})
+		return
+	}
+}
+
+// serveAddTTSModels renders the Add TTS Models page using templates
+func serveAddTTSModels(c *gin.Context) {
+	data := TemplateData{
+		Title:            "🍑 Speaches UI - Add TTS Models",
+		Page:             "add-tts-models",
+		HeroTitle:        "📥 Add Text-to-Speech Models",
+		HeroDescription:  "Browse and install TTS models from the speaches.ai registry",
+		ContentID:        "add-tts-models",
+	}
+
+	c.Header("Content-Type", "text/html; charset=utf-8")
+
+	// Render base.html with add-tts-models.html content template included
+	if err := templates.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
+		// ERROR: Failed to render add-tts-models template
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to render page"})
+		return
+	}
+}
+
+// serveAddSTTModels renders the Add STT Models page using templates
+func serveAddSTTModels(c *gin.Context) {
+	data := TemplateData{
+		Title:            "🍑 Speaches UI - Add STT Models",
+		Page:             "add-stt-models",
+		HeroTitle:        "📥 Add Speech-to-Text Models",
+		HeroDescription:  "Browse and install STT models from the speaches.ai registry",
+		ContentID:        "add-stt-models",
+	}
+
+	c.Header("Content-Type", "text/html; charset=utf-8")
+
+	// Render base.html with add-stt-models.html content template included
+	if err := templates.ExecuteTemplate(c.Writer, "base.html", data); err != nil {
+		// ERROR: Failed to render add-stt-models template
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to render page"})
 		return
 	}

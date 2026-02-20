@@ -1,0 +1,339 @@
+{{define "add-models-content"}}
+<div class="add-models-container">
+	<div class="add-models-header">
+		<a href="/models" class="btn btn-secondary">← Back to Models</a>
+		<div id="searchContainer" class="search-container">
+			<input type="text" id="searchInput" class="form-control" placeholder="Search models...">
+		</div>
+		<div id="filterContainer" class="filter-container">
+			<select id="typeFilter" class="form-control">
+				<option value="">All Models</option>
+				<option value="tts">Text-to-Speech (TTS)</option>
+				<option value="stt">Speech-to-Text (STT)</option>
+			</select>
+		</div>
+	</div>
+
+	<div id="loadingSpinner" class="spinner-border" role="status" style="display: none;">
+		<span class="visually-hidden">Loading...</span>
+	</div>
+
+	<div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+	<div id="successAlert" class="alert alert-success" role="alert" style="display: none;"></div>
+
+	<div id="modelsGrid" class="models-grid-registry">
+		<!-- Models will be populated here -->
+	</div>
+</div>
+
+<style>
+	.add-models-container {
+		padding: 20px 0;
+	}
+
+	.add-models-header {
+		display: flex;
+		gap: 15px;
+		margin-bottom: 30px;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	.search-container {
+		flex: 1;
+		min-width: 200px;
+	}
+
+	.filter-container {
+		min-width: 200px;
+	}
+
+	.models-grid-registry {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 20px;
+		margin-top: 20px;
+	}
+
+	.model-card {
+		background: var(--card-bg);
+		border: 1px solid var(--border-color);
+		border-radius: 8px;
+		padding: 20px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		transition: box-shadow 0.2s, transform 0.2s;
+	}
+
+	.model-card:hover {
+		box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+		transform: translateY(-2px);
+	}
+
+	.model-card-title {
+		font-weight: 600;
+		font-size: 1.1rem;
+		color: var(--text-color);
+	}
+
+	.model-card-id {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		font-family: monospace;
+		word-break: break-all;
+	}
+
+	.model-card-description {
+		color: var(--text-secondary);
+		font-size: 0.95rem;
+		flex: 1;
+	}
+
+	.model-card-badge {
+		display: inline-block;
+		padding: 4px 10px;
+		border-radius: 12px;
+		font-size: 0.85rem;
+		font-weight: 500;
+		width: fit-content;
+	}
+
+	.badge-tts {
+		background-color: #cfe2ff;
+		color: #084298;
+	}
+
+	.badge-stt {
+		background-color: #d1e7dd;
+		color: #0f5132;
+	}
+
+	[data-theme="dark"] .badge-tts {
+		background-color: #1a4d7d;
+		color: #6ea8fe;
+	}
+
+	[data-theme="dark"] .badge-stt {
+		background-color: #1b5e52;
+		color: #75b798;
+	}
+
+	.model-card-footer {
+		display: flex;
+		gap: 10px;
+		margin-top: auto;
+	}
+
+	.install-btn {
+		flex: 1;
+		padding: 8px 12px;
+		font-size: 0.9rem;
+	}
+
+	.install-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.model-card-status {
+		padding: 8px 12px;
+		border-radius: 4px;
+		background: #d4edda;
+		color: #155724;
+		font-size: 0.85rem;
+		text-align: center;
+		font-weight: 500;
+	}
+
+	.text-muted {
+		color: var(--text-secondary);
+		text-align: center;
+		padding: 40px 20px;
+		font-size: 1.1rem;
+	}
+
+	:root {
+		--card-bg: #ffffff;
+		--border-color: #dee2e6;
+		--text-color: #212529;
+		--text-secondary: #6c757d;
+	}
+
+	[data-theme="dark"] {
+		--card-bg: #2d2d2d;
+		--border-color: #444444;
+		--text-color: #e0e0e0;
+		--text-secondary: #a0a0a0;
+	}
+
+	@media (max-width: 768px) {
+		.add-models-header {
+			flex-direction: column;
+		}
+
+		.search-container,
+		.filter-container {
+			width: 100%;
+		}
+
+		.models-grid-registry {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
+
+<script>
+	const searchInput = document.getElementById('searchInput');
+	const typeFilter = document.getElementById('typeFilter');
+	const modelsGrid = document.getElementById('modelsGrid');
+	const loadingSpinner = document.getElementById('loadingSpinner');
+	const errorAlert = document.getElementById('errorAlert');
+	const successAlert = document.getElementById('successAlert');
+
+	let allModels = [];
+	let installedModels = new Set();
+
+	async function fetchRegistryModels() {
+		loadingSpinner.style.display = 'block';
+		errorAlert.style.display = 'none';
+
+		try {
+			const response = await fetch('/api/models/registry');
+			if (!response.ok) {
+				throw new Error(`Failed to fetch models: ${response.statusText}`);
+			}
+
+			const data = await response.json();
+			allModels = data.models || [];
+			installedModels = new Set(data.installed || []);
+
+			displayModels(allModels);
+		} catch (error) {
+			console.error('Error fetching models:', error);
+			errorAlert.textContent = 'Error loading models: ' + error.message;
+			errorAlert.style.display = 'block';
+		} finally {
+			loadingSpinner.style.display = 'none';
+		}
+	}
+
+	function filterModels() {
+		const searchTerm = searchInput.value.toLowerCase();
+		const typeValue = typeFilter.value;
+
+		const filtered = allModels.filter(model => {
+			const matchesSearch =
+				model.name.toLowerCase().includes(searchTerm) ||
+				model.id.toLowerCase().includes(searchTerm) ||
+				(model.description && model.description.toLowerCase().includes(searchTerm));
+
+			const matchesType = !typeValue || model.type === typeValue;
+
+			return matchesSearch && matchesType;
+		});
+
+		displayModels(filtered);
+	}
+
+	function displayModels(models) {
+		if (models.length === 0) {
+			modelsGrid.innerHTML = '<p class="text-muted">No models found</p>';
+			return;
+		}
+
+		modelsGrid.innerHTML = models.map(model => {
+			const isInstalled = installedModels.has(model.id);
+			const typeClass = model.type === 'stt' ? 'badge-stt' : 'badge-tts';
+			const typeLabel = model.type === 'stt' ? 'Speech-to-Text' : 'Text-to-Speech';
+
+			return `
+				<div class="model-card">
+					<div class="model-card-title">${escapeHtml(model.name)}</div>
+					<div class="model-card-badge ${typeClass}">${typeLabel}</div>
+					<div class="model-card-id">ID: ${escapeHtml(model.id)}</div>
+					${model.description ? `<div class="model-card-description">${escapeHtml(model.description)}</div>` : ''}
+					<div class="model-card-footer">
+						${isInstalled
+							? '<div class="model-card-status">✓ Installed</div>'
+							: `<button class="btn btn-sm btn-primary install-btn" data-model-id="${escapeHtml(model.id)}" data-model-name="${escapeHtml(model.name)}">
+								📥 Install
+							</button>`
+						}
+					</div>
+				</div>
+			`;
+		}).join('');
+
+		// Add event listeners to install buttons
+		document.querySelectorAll('.install-btn').forEach(btn => {
+			btn.addEventListener('click', handleInstallModel);
+		});
+	}
+
+	async function handleInstallModel(event) {
+		const btn = event.target;
+		const modelId = btn.dataset.modelId;
+		const modelName = btn.dataset.modelName;
+
+		btn.disabled = true;
+		const originalText = btn.textContent;
+		btn.textContent = '⏳ Installing...';
+
+		try {
+			const response = await fetch('/api/models/install', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					model_id: modelId
+				})
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || `Failed to install model: ${response.statusText}`);
+			}
+
+			showSuccess(`✓ Successfully installed ${modelName}`);
+			installedModels.add(modelId);
+			setTimeout(() => filterModels(), 1500);
+		} catch (error) {
+			console.error('Error installing model:', error);
+			btn.disabled = false;
+			btn.textContent = originalText;
+			showError(`Error installing ${modelName}: ${error.message}`);
+		}
+	}
+
+	function showSuccess(message) {
+		successAlert.textContent = message;
+		successAlert.style.display = 'block';
+		errorAlert.style.display = 'none';
+
+		setTimeout(() => {
+			successAlert.style.display = 'none';
+		}, 4000);
+	}
+
+	function showError(message) {
+		errorAlert.textContent = message;
+		errorAlert.style.display = 'block';
+		successAlert.style.display = 'none';
+	}
+
+	function escapeHtml(text) {
+		const div = document.createElement('div');
+		div.textContent = text;
+		return div.innerHTML;
+	}
+
+	searchInput.addEventListener('input', filterModels);
+	typeFilter.addEventListener('change', filterModels);
+
+	// Load models on page load
+	fetchRegistryModels();
+</script>
+{{end}}

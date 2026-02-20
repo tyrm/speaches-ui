@@ -1,0 +1,350 @@
+{{define "add-tts-models-content"}}
+<div class="add-models-container">
+	<div class="add-models-header">
+		<a href="/models" class="btn btn-secondary">← Back to Models</a>
+		<div id="searchContainer" class="search-container">
+			<input type="text" id="searchInput" class="form-control" placeholder="Search TTS models...">
+		</div>
+	</div>
+
+	<div id="loadingSpinner" class="spinner-border" role="status" style="display: none;">
+		<span class="visually-hidden">Loading...</span>
+	</div>
+
+	<div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+	<div id="successAlert" class="alert alert-success" role="alert" style="display: none;"></div>
+
+	<div class="table-responsive">
+		<table class="table table-hover models-table">
+			<thead>
+				<tr>
+					<th>Model Name</th>
+					<th>Model ID</th>
+					<th>Description</th>
+					<th>Status</th>
+					<th style="width: 120px;">Action</th>
+				</tr>
+			</thead>
+			<tbody id="modelsTableBody">
+				<tr>
+					<td colspan="5" class="text-center text-muted" style="padding: 40px;">Loading models...</td>
+				</tr>
+			</tbody>
+		</table>
+	</div>
+</div>
+
+<style>
+	.add-models-container {
+		padding: 20px 0;
+	}
+
+	.add-models-header {
+		display: flex;
+		gap: 15px;
+		margin-bottom: 30px;
+		align-items: center;
+		flex-wrap: wrap;
+	}
+
+	.search-container {
+		flex: 1;
+		min-width: 200px;
+	}
+
+	.models-table {
+		background-color: #ffffff;
+		color: #212529;
+		border-color: #dee2e6;
+		margin-bottom: 0;
+	}
+
+	.models-table thead {
+		background-color: #f8f9fa;
+		border-color: #dee2e6;
+	}
+
+	.models-table thead th {
+		color: #212529;
+		border-color: #dee2e6;
+		font-weight: 600;
+		padding: 12px;
+	}
+
+	.models-table tbody td {
+		border-color: #dee2e6;
+		padding: 12px;
+		vertical-align: middle;
+		background-color: #ffffff;
+	}
+
+	.models-table tbody tr:hover {
+		background-color: #f5f5f5;
+	}
+
+	.model-id {
+		font-family: monospace;
+		font-size: 0.9rem;
+		color: #6c757d;
+		word-break: break-all;
+	}
+
+	.status-badge {
+		padding: 4px 10px;
+		border-radius: 4px;
+		font-size: 0.85rem;
+		font-weight: 500;
+		display: inline-block;
+	}
+
+	.status-installed {
+		background-color: #d4edda;
+		color: #155724;
+	}
+
+	.status-notinstalled {
+		background-color: #f8d7da;
+		color: #721c24;
+	}
+
+	.install-btn {
+		padding: 6px 12px;
+		font-size: 0.85rem;
+		white-space: nowrap;
+	}
+
+	.install-btn:disabled {
+		opacity: 0.6;
+		cursor: not-allowed;
+	}
+
+	.text-muted {
+		color: #6c757d;
+	}
+
+	html[data-theme="dark"] .models-table {
+		background-color: #2d2d2d !important;
+		color: #e0e0e0 !important;
+		border-color: #444444 !important;
+	}
+
+	html[data-theme="dark"] .models-table thead {
+		background-color: #1a1a1a !important;
+		border-color: #444444 !important;
+	}
+
+	html[data-theme="dark"] .models-table thead th {
+		color: #e0e0e0 !important;
+		border-color: #444444 !important;
+		background-color: #1a1a1a !important;
+	}
+
+	html[data-theme="dark"] .models-table tbody td {
+		background-color: #2d2d2d !important;
+		border-color: #444444 !important;
+		color: #e0e0e0 !important;
+	}
+
+	html[data-theme="dark"] .models-table tbody tr:hover {
+		background-color: #3d3d3d !important;
+	}
+
+	html[data-theme="dark"] .model-id {
+		color: #a0a0a0 !important;
+	}
+
+	html[data-theme="dark"] .status-installed {
+		background-color: #1b5e52 !important;
+		color: #75b798 !important;
+	}
+
+	html[data-theme="dark"] .status-notinstalled {
+		background-color: #664d54 !important;
+		color: #f5c6cb !important;
+	}
+
+	html[data-theme="dark"] .text-muted {
+		color: #a0a0a0 !important;
+	}
+
+	/* Ensure table cells in dark mode have dark background */
+	html[data-theme="dark"] table.models-table > tbody > tr > td {
+		background-color: #2d2d2d !important;
+	}
+
+	@media (max-width: 768px) {
+		.add-models-header {
+			flex-direction: column;
+		}
+
+		.search-container {
+			width: 100%;
+		}
+
+		.models-table {
+			font-size: 0.9rem;
+		}
+
+		.models-table thead th,
+		.models-table tbody td {
+			padding: 8px;
+		}
+
+		.model-id {
+			font-size: 0.8rem;
+		}
+	}
+</style>
+
+<script>
+	const searchInput = document.getElementById('searchInput');
+	const modelsTableBody = document.getElementById('modelsTableBody');
+	const loadingSpinner = document.getElementById('loadingSpinner');
+	const errorAlert = document.getElementById('errorAlert');
+	const successAlert = document.getElementById('successAlert');
+
+	let allModels = [];
+	let installedModels = new Set();
+
+	async function fetchModels() {
+		loadingSpinner.style.display = 'block';
+		errorAlert.style.display = 'none';
+
+		try {
+			const response = await fetch('/api/models/registry');
+			if (!response.ok) {
+				throw new Error(`Failed to fetch models: ${response.statusText}`);
+			}
+
+			const data = await response.json();
+			allModels = (data.models || []).filter(m => m.type === 'tts');
+			installedModels = new Set(data.installed || []);
+
+			displayModels(allModels);
+		} catch (error) {
+			console.error('Error fetching models:', error);
+			errorAlert.textContent = 'Error loading models: ' + error.message;
+			errorAlert.style.display = 'block';
+		} finally {
+			loadingSpinner.style.display = 'none';
+		}
+	}
+
+	function filterModels() {
+		const searchTerm = searchInput.value.toLowerCase();
+
+		const filtered = allModels.filter(model => {
+			return (
+				model.name.toLowerCase().includes(searchTerm) ||
+				model.id.toLowerCase().includes(searchTerm) ||
+				(model.description && model.description.toLowerCase().includes(searchTerm))
+			);
+		});
+
+		displayModels(filtered);
+	}
+
+	function displayModels(models) {
+		if (models.length === 0) {
+			modelsTableBody.innerHTML =
+				'<tr><td colspan="5" class="text-center text-muted" style="padding: 40px;">No TTS models found</td></tr>';
+			return;
+		}
+
+		modelsTableBody.innerHTML = models
+			.map(model => {
+				const isInstalled = installedModels.has(model.id);
+
+				return `
+			<tr>
+				<td><strong>${escapeHtml(model.name)}</strong></td>
+				<td class="model-id">${escapeHtml(model.id)}</td>
+				<td>${model.description ? escapeHtml(model.description) : '<span class="text-muted">-</span>'}</td>
+				<td>
+					${isInstalled ? '<span class="status-badge status-installed">✓ Installed</span>' : '<span class="status-badge status-notinstalled">⊘ Not Installed</span>'}
+				</td>
+				<td>
+					${
+						isInstalled
+							? ''
+							: `<button class="btn btn-sm btn-primary install-btn" data-model-id="${escapeHtml(model.id)}" data-model-name="${escapeHtml(model.name)}">
+								📥 Install
+							</button>`
+					}
+				</td>
+			</tr>
+		`;
+			})
+			.join('');
+
+		// Add event listeners to install buttons
+		document.querySelectorAll('.install-btn').forEach(btn => {
+			btn.addEventListener('click', handleInstallModel);
+		});
+	}
+
+	async function handleInstallModel(event) {
+		const btn = event.target;
+		const modelId = btn.dataset.modelId;
+		const modelName = btn.dataset.modelName;
+
+		btn.disabled = true;
+		const originalText = btn.textContent;
+		btn.textContent = '⏳ Installing...';
+
+		try {
+			const response = await fetch('/api/models/install', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					model_id: modelId,
+				}),
+			});
+
+			const data = await response.json();
+
+			if (!response.ok) {
+				throw new Error(data.error || `Failed to install model: ${response.statusText}`);
+			}
+
+			showSuccess(`✓ Successfully installed ${modelName}`);
+			installedModels.add(modelId);
+			setTimeout(() => filterModels(), 1500);
+		} catch (error) {
+			console.error('Error installing model:', error);
+			btn.disabled = false;
+			btn.textContent = originalText;
+			showError(`Error installing ${modelName}: ${error.message}`);
+		}
+	}
+
+	function showSuccess(message) {
+		successAlert.textContent = message;
+		successAlert.style.display = 'block';
+		errorAlert.style.display = 'none';
+
+		setTimeout(() => {
+			successAlert.style.display = 'none';
+		}, 4000);
+	}
+
+	function showError(message) {
+		errorAlert.textContent = message;
+		errorAlert.style.display = 'block';
+		successAlert.style.display = 'none';
+	}
+
+	function escapeHtml(text) {
+		const div = document.createElement('div');
+		div.textContent = text;
+		return div.innerHTML;
+	}
+
+	searchInput.addEventListener('input', filterModels);
+
+	// Load models on page load
+	fetchModels();
+</script>
+{{end}}

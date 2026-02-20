@@ -387,6 +387,11 @@ textarea.form-control:focus {
 	color: white;
 }
 
+/* table color workaround */
+#modelsTableBody > * > * {
+    background-color: var(--bg-primary) !important;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
 	.form-layout {

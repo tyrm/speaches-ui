@@ -1,0 +1,273 @@
+{{define "models-content"}}
+<div class="models-container">
+	<div class="models-controls">
+		<button id="refreshBtn" class="btn btn-primary">🔄 Refresh Models</button>
+		<a href="/add-tts-models" class="btn btn-success">➕ Add TTS Models</a>
+		<a href="/add-stt-models" class="btn btn-success">➕ Add STT Models</a>
+		<div id="statusMessage" class="status-message"></div>
+	</div>
+
+	<div id="loadingSpinner" class="spinner-border" role="status" style="display: none;">
+		<span class="visually-hidden">Loading...</span>
+	</div>
+
+	<div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
+
+	<div id="modelsContent">
+		<div class="models-grid">
+			<div id="ttsModels" class="models-section">
+				<h3>Text-to-Speech Models</h3>
+				<div id="ttsList" class="models-list">
+					<p class="text-muted">Loading models...</p>
+				</div>
+			</div>
+
+			<div id="sttModels" class="models-section">
+				<h3>Speech-to-Text Models</h3>
+				<div id="sttList" class="models-list">
+					<p class="text-muted">Loading models...</p>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+
+<style>
+	.models-container {
+		padding: 20px 0;
+	}
+
+	.models-controls {
+		margin-bottom: 30px;
+		display: flex;
+		gap: 15px;
+		align-items: center;
+	}
+
+	.status-message {
+		padding: 10px 15px;
+		background-color: #e3f2fd;
+		border-left: 4px solid #2196f3;
+		border-radius: 4px;
+		display: none;
+	}
+
+	.status-message.show {
+		display: block;
+	}
+
+	.models-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 30px;
+		margin-top: 30px;
+	}
+
+	@media (max-width: 768px) {
+		.models-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+
+	.models-section {
+		background: var(--card-bg);
+		border-radius: 8px;
+		padding: 20px;
+		border: 1px solid var(--border-color);
+	}
+
+	.models-section h3 {
+		margin-top: 0;
+		margin-bottom: 20px;
+		color: var(--text-color);
+		font-size: 1.3rem;
+	}
+
+	.models-list {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.model-item {
+		padding: 15px;
+		background: var(--item-bg);
+		border: 1px solid var(--border-color);
+		border-radius: 6px;
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+
+	.model-info {
+		flex: 1;
+	}
+
+	.model-name {
+		font-weight: 600;
+		color: var(--text-color);
+		margin-bottom: 4px;
+	}
+
+	.model-details {
+		font-size: 0.9rem;
+		color: var(--text-secondary);
+		margin-top: 4px;
+	}
+
+	.model-status {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-end;
+		gap: 8px;
+	}
+
+	.status-badge {
+		padding: 4px 12px;
+		border-radius: 20px;
+		font-size: 0.85rem;
+		font-weight: 500;
+	}
+
+	.status-installed {
+		background-color: #d4edda;
+		color: #155724;
+	}
+
+	.status-notinstalled {
+		background-color: #f8d7da;
+		color: #721c24;
+	}
+
+	.download-btn {
+		padding: 6px 12px;
+		font-size: 0.85rem;
+		white-space: nowrap;
+	}
+
+	.spinner-border {
+		margin: 20px 0;
+	}
+
+	.text-muted {
+		color: var(--text-secondary);
+		text-align: center;
+		padding: 20px;
+	}
+
+	:root {
+		--card-bg: #ffffff;
+		--item-bg: #f8f9fa;
+		--border-color: #dee2e6;
+		--text-color: #212529;
+		--text-secondary: #6c757d;
+	}
+
+	[data-theme="dark"] {
+		--card-bg: #2d2d2d;
+		--item-bg: #3d3d3d;
+		--border-color: #444444;
+		--text-color: #e0e0e0;
+		--text-secondary: #a0a0a0;
+	}
+</style>
+
+<script>
+	const refreshBtn = document.getElementById('refreshBtn');
+	const ttsList = document.getElementById('ttsList');
+	const sttList = document.getElementById('sttList');
+	const loadingSpinner = document.getElementById('loadingSpinner');
+	const errorAlert = document.getElementById('errorAlert');
+	const statusMessage = document.getElementById('statusMessage');
+
+	async function fetchModels() {
+		loadingSpinner.style.display = 'block';
+		errorAlert.style.display = 'none';
+		statusMessage.textContent = 'Loading installed models...';
+		statusMessage.classList.add('show');
+
+		try {
+			const response = await fetch('/api/models');
+			if (!response.ok) {
+				throw new Error(`Failed to fetch models: ${response.statusText}`);
+			}
+
+			const data = await response.json();
+			displayModels(data);
+			statusMessage.classList.remove('show');
+		} catch (error) {
+			console.error('Error fetching models:', error);
+			errorAlert.textContent = 'Error loading models: ' + error.message;
+			errorAlert.style.display = 'block';
+			statusMessage.classList.remove('show');
+		} finally {
+			loadingSpinner.style.display = 'none';
+		}
+	}
+
+	function displayModels(data) {
+		const ttsModels = data.tts || [];
+		const sttModels = data.stt || [];
+
+		displayTTSModels(ttsModels);
+		displaySTTModels(sttModels);
+	}
+
+	function displayTTSModels(models) {
+		if (models.length === 0) {
+			ttsList.innerHTML = '<p class="text-muted">No TTS models available</p>';
+			return;
+		}
+
+		ttsList.innerHTML = models.map(model => `
+			<div class="model-item">
+				<div class="model-info">
+					<div class="model-name">${escapeHtml(model.name)}</div>
+					<div class="model-details">
+						<strong>ID:</strong> ${escapeHtml(model.id)}<br>
+						${model.description ? `<strong>Description:</strong> ${escapeHtml(model.description)}<br>` : ''}
+						<strong>Type:</strong> ${escapeHtml(model.type || 'Unknown')}
+					</div>
+				</div>
+				<div class="model-status">
+					<span class="status-badge status-installed">✓ Installed</span>
+				</div>
+			</div>
+		`).join('');
+	}
+
+	function displaySTTModels(models) {
+		if (models.length === 0) {
+			sttList.innerHTML = '<p class="text-muted">No STT models available</p>';
+			return;
+		}
+
+		sttList.innerHTML = models.map(model => `
+			<div class="model-item">
+				<div class="model-info">
+					<div class="model-name">${escapeHtml(model.name)}</div>
+					<div class="model-details">
+						<strong>ID:</strong> ${escapeHtml(model.id)}<br>
+						${model.description ? `<strong>Description:</strong> ${escapeHtml(model.description)}<br>` : ''}
+						<strong>Type:</strong> ${escapeHtml(model.type || 'Unknown')}
+					</div>
+				</div>
+				<div class="model-status">
+					<span class="status-badge status-installed">✓ Installed</span>
+				</div>
+			</div>
+		`).join('');
+	}
+
+	function escapeHtml(text) {
+		const div = document.createElement('div');
+		div.textContent = text;
+		return div.innerHTML;
+	}
+
+	refreshBtn.addEventListener('click', fetchModels);
+
+	// Load models on page load
+	fetchModels();
+</script>
+{{end}}

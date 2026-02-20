@@ -26,6 +26,9 @@
 						<a class="nav-link {{if eq .Page "stt"}}active{{end}}" href="/stt">Speech to Text</a>
 					</li>
 					<li class="nav-item">
+						<a class="nav-link {{if eq .Page "models"}}active{{end}}" href="/models">Models</a>
+					</li>
+					<li class="nav-item">
 						<button id="themeToggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
 					</li>
 				</ul>
@@ -48,6 +51,12 @@
 				{{template "tts-content" .}}
 			{{else if eq .Page "stt"}}
 				{{template "stt-content" .}}
+			{{else if eq .Page "models"}}
+				{{template "models-content" .}}
+			{{else if eq .Page "add-tts-models"}}
+				{{template "add-tts-models-content" .}}
+			{{else if eq .Page "add-stt-models"}}
+				{{template "add-stt-models-content" .}}
 			{{end}}
 		</div>
 	</div>

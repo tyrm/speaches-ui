@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -546,6 +547,12 @@ func handleTTS(c *gin.Context) {
 		"en_GB-northern_english_male-medium": true,
 		"en_GB-semaine-medium":               true,
 		"en_GB-vctk-medium":                  true,
+		// Spanish
+		"es_ES-carlfm-x_low":      true,
+		"es_ES-davefx-medium":     true,
+		"es_ES-mls_10246-low":     true,
+		"es_ES-mls_9972-low":      true,
+		"es_ES-sharvard-medium":   true,
 	}
 
 	// Validate and set defaults based on model
@@ -605,9 +612,9 @@ func handleTTS(c *gin.Context) {
 		// Check if error is about missing model (for Piper voices)
 		if model == "tts-1-piper" && (bytes.Contains(body, []byte("is not installed locally")) || (bytes.Contains(body, []byte("Model")) && bytes.Contains(body, []byte("not found")))) {
 			// Auto-download the Piper voice model
-			// URL-encode the model ID for the download endpoint
-			modelID := "speaches-ai%2Fpiper-" + voice
-			downloadURL := speachesBaseURL + "/v1/models/" + modelID
+			// Properly encode the model ID in the URL path
+			encodedModelID := url.PathEscape(actualModel)
+			downloadURL := speachesBaseURL + "/v1/models/" + encodedModelID
 			downloadResp, downloadErr := http.Post(downloadURL, "application/json", nil)
 			if downloadErr == nil {
 				downloadResp.Body.Close()
@@ -846,8 +853,9 @@ func handleSTT(c *gin.Context) {
 
 		// Check if error is about missing model and try to download it
 		if bytes.Contains(bodyBytes, []byte("is not installed locally")) || (bytes.Contains(bodyBytes, []byte("Model")) && bytes.Contains(bodyBytes, []byte("not found"))) {
-			// Try to download the model
-			downloadURL := speachesBaseURL + "/v1/models/whisper-1"
+			// Try to download the Whisper model
+			encodedModelID := url.PathEscape("whisper-1")
+			downloadURL := speachesBaseURL + "/v1/models/" + encodedModelID
 			downloadResp, downloadErr := http.Post(downloadURL, "application/json", nil)
 			if downloadErr == nil {
 				downloadResp.Body.Close()

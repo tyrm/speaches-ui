@@ -3,6 +3,7 @@
 <div id="playerContainer" class="player-container">
 	<div class="player-controls">
 		<button id="playBtn" class="play-btn">▶ Play</button>
+		<button id="downloadBtn" class="download-btn" disabled>⬇ Download</button>
 		<div class="progress-container">
 			<input type="range" id="progressBar" class="progress-bar" min="0" value="0">
 			<span id="timeDisplay" class="time-display">0:00 / 0:00</span>
@@ -57,6 +58,7 @@
 	const audioPlayer = document.getElementById('audioPlayer');
 	const playerContainer = document.getElementById('playerContainer');
 	const playBtn = document.getElementById('playBtn');
+	const downloadBtn = document.getElementById('downloadBtn');
 	const progressBar = document.getElementById('progressBar');
 	const timeDisplay = document.getElementById('timeDisplay');
 	const errorAlert = document.getElementById('errorAlert');
@@ -268,6 +270,7 @@
 			resetPlayer();
 			audioPlayer.play();
 			updatePlayButton();
+			downloadBtn.disabled = false;
 			statusMessage.textContent = '';
 
 		} catch (error) {
@@ -278,6 +281,30 @@
 			speakBtn.disabled = false;
 			speakBtn.textContent = '🔊 Speak';
 		}
+	});
+
+	// Handle download button click
+	downloadBtn.addEventListener('click', function() {
+		if (!audioUrl) {
+			showError('No audio to download');
+			return;
+		}
+
+		// Generate filename from text and timestamp
+		const text = textInput.value.trim();
+		const textPreview = text.substring(0, 30).replace(/[^a-z0-9]/gi, '_');
+		const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+		const filename = `tts_${textPreview}_${timestamp}.wav`;
+
+		// Create a temporary link and trigger download
+		const link = document.createElement('a');
+		link.href = audioUrl;
+		link.download = filename;
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+
+		showSuccess('Audio downloaded: ' + filename);
 	});
 
 	// Play/Pause handler

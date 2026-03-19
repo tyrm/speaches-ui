@@ -248,6 +248,33 @@ textarea.form-control:focus {
 	transform: translateY(0);
 }
 
+.download-btn {
+	background: var(--gradient);
+	color: white;
+	border: none;
+	padding: 8px 16px;
+	border-radius: 5px;
+	cursor: pointer;
+	font-size: 14px;
+	font-weight: 600;
+	transition: all 0.3s ease;
+	min-width: 110px;
+}
+
+.download-btn:hover:not(:disabled) {
+	transform: translateY(-2px);
+	box-shadow: 0 4px 10px rgba(0, 82, 179, 0.3);
+}
+
+.download-btn:active:not(:disabled) {
+	transform: translateY(0);
+}
+
+.download-btn:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 .progress-container {
 	flex: 1;
 	display: flex;

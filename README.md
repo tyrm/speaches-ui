@@ -38,9 +38,23 @@ Default: `http://localhost:8000`
 ## Usage
 
 1. Enter text in the textarea
-2. Select a voice from the dropdown
-3. Click **Speak** or press **Shift+Enter**
-4. Audio plays automatically
+2. Select a model:
+   - **Kokoro**: High-quality neural TTS with English voices (American & British)
+   - **Piper**: Fast TTS with English and Spanish voices
+3. Select a voice from the dropdown
+4. Click **Speak** or press **Shift+Enter**
+5. Audio plays automatically
+
+### Supported Languages & Voices
+
+**Kokoro (TTS-1)**
+- 🇺🇸 American: Female (Nova, Sarah, Bella, Heart, Aoede, Jessica, Kore, Nicole, River, Sky, Alloy) | Male (Adam, Echo, Liam, Onyx, Michael, Eric, Fenrir, Puck, Santa, Lewis)
+- 🇬🇧 British: Female (Alice, Emma, Isabella, Lily) | Male (Fable, George, Daniel, Lewis)
+
+**Piper (TTS-1-Piper)**
+- 🇺🇸 US English: Multiple male and female voice variants at different quality levels
+- 🇬🇧 British English: Alan, Alba, Aru, Cori, Jenny Dioco, and more
+- 🇪🇸 Spanish: Carlfm, Davefx, Sharvard, MLS 10246, MLS 9972
 
 ## API
 

@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -78,6 +79,9 @@ func main() {
 
 	// Models endpoint for installing models
 	router.POST("/api/models/install", handleInstallModel)
+
+	// Voices endpoint for getting available voices for a model
+	router.GET("/api/voices/*modelId", handleGetVoices)
 
 	// Start the server on port 5420
 	// INFO: Server listening on http://localhost:5420
@@ -371,6 +375,74 @@ func handleInstallModel(c *gin.Context) {
 	})
 }
 
+// handleGetVoices returns available voices for a given model
+func handleGetVoices(c *gin.Context) {
+	modelID := c.Param("modelId")
+
+	type Voice struct {
+		Value string `json:"value"`
+		Label string `json:"label"`
+	}
+
+	// Determine if Kokoro or Piper based on model ID
+	var voices gin.H
+
+	if strings.Contains(modelID, "Kokoro") {
+		voices = gin.H{
+			"American Female": []Voice{
+				{Value: "af_nova", Label: "Nova (Neutral)"},
+				{Value: "af_sarah", Label: "Sarah (Clear)"},
+				{Value: "af_bella", Label: "Bella (Warm)"},
+				{Value: "af_heart", Label: "Heart (Expressive)"},
+				{Value: "af_aoede", Label: "Aoede (Bright)"},
+				{Value: "af_jessica", Label: "Jessica (Smooth)"},
+				{Value: "af_kore", Label: "Kore (Dynamic)"},
+				{Value: "af_nicole", Label: "Nicole (Natural)"},
+				{Value: "af_river", Label: "River (Calm)"},
+				{Value: "af_sky", Label: "Sky (Gentle)"},
+				{Value: "af_alloy", Label: "Alloy (Balanced)"},
+			},
+			"American Male": []Voice{
+				{Value: "am_adam", Label: "Adam (Friendly)"},
+				{Value: "am_echo", Label: "Echo (Deep)"},
+				{Value: "am_liam", Label: "Liam (Professional)"},
+				{Value: "am_onyx", Label: "Onyx (Commanding)"},
+				{Value: "am_michael", Label: "Michael (Energetic)"},
+				{Value: "am_eric", Label: "Eric (Smooth)"},
+				{Value: "am_fenrir", Label: "Fenrir (Intense)"},
+				{Value: "am_puck", Label: "Puck (Playful)"},
+				{Value: "am_santa", Label: "Santa (Jolly)"},
+				{Value: "am_liam", Label: "Lewis (Rich)"},
+			},
+			"British Female": []Voice{
+				{Value: "bf_alice", Label: "Alice (Posh)"},
+				{Value: "bf_emma", Label: "Emma (Refined)"},
+				{Value: "bf_isabella", Label: "Isabella (Elegant)"},
+				{Value: "bf_lily", Label: "Lily (Sweet)"},
+			},
+			"British Male": []Voice{
+				{Value: "bm_fable", Label: "Fable (Theatrical)"},
+				{Value: "bm_george", Label: "George (Distinguished)"},
+				{Value: "bm_daniel", Label: "Daniel (Smooth)"},
+				{Value: "bm_lewis", Label: "Lewis (Rich)"},
+			},
+		}
+	} else if strings.Contains(modelID, "piper") {
+		voices = gin.H{
+			"voices": []Voice{
+				{Value: "en_US-ryan-high", Label: "Ryan (High Quality)"},
+				{Value: "en_US-ryan-medium", Label: "Ryan (Medium Quality)"},
+				{Value: "en_US-ryan-low", Label: "Ryan (Low Latency)"},
+				{Value: "en_US-hfc_female-medium", Label: "HFC Female"},
+				{Value: "en_US-amy-medium", Label: "Amy (Medium)"},
+				{Value: "en_US-lessac-high", Label: "Lessac (High Quality)"},
+			},
+		}
+	}
+
+	c.JSON(http.StatusOK, voices)
+}
+
 // handleTTS processes text-to-speech requests by calling the speaches.ai server
 func handleTTS(c *gin.Context) {
 	var req struct {
@@ -475,6 +547,12 @@ func handleTTS(c *gin.Context) {
 		"en_GB-northern_english_male-medium": true,
 		"en_GB-semaine-medium":               true,
 		"en_GB-vctk-medium":                  true,
+		// Spanish
+		"es_ES-carlfm-x_low":      true,
+		"es_ES-davefx-medium":     true,
+		"es_ES-mls_10246-low":     true,
+		"es_ES-mls_9972-low":      true,
+		"es_ES-sharvard-medium":   true,
 	}
 
 	// Validate and set defaults based on model
@@ -534,9 +612,9 @@ func handleTTS(c *gin.Context) {
 		// Check if error is about missing model (for Piper voices)
 		if model == "tts-1-piper" && (bytes.Contains(body, []byte("is not installed locally")) || (bytes.Contains(body, []byte("Model")) && bytes.Contains(body, []byte("not found")))) {
 			// Auto-download the Piper voice model
-			// URL-encode the model ID for the download endpoint
-			modelID := "speaches-ai%2Fpiper-" + voice
-			downloadURL := speachesBaseURL + "/v1/models/" + modelID
+			// Properly encode the model ID in the URL path
+			encodedModelID := url.PathEscape(actualModel)
+			downloadURL := speachesBaseURL + "/v1/models/" + encodedModelID
 			downloadResp, downloadErr := http.Post(downloadURL, "application/json", nil)
 			if downloadErr == nil {
 				downloadResp.Body.Close()
@@ -775,8 +853,9 @@ func handleSTT(c *gin.Context) {
 
 		// Check if error is about missing model and try to download it
 		if bytes.Contains(bodyBytes, []byte("is not installed locally")) || (bytes.Contains(bodyBytes, []byte("Model")) && bytes.Contains(bodyBytes, []byte("not found"))) {
-			// Try to download the model
-			downloadURL := speachesBaseURL + "/v1/models/whisper-1"
+			// Try to download the Whisper model
+			encodedModelID := url.PathEscape("whisper-1")
+			downloadURL := speachesBaseURL + "/v1/models/" + encodedModelID
 			downloadResp, downloadErr := http.Post(downloadURL, "application/json", nil)
 			if downloadErr == nil {
 				downloadResp.Body.Close()

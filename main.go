@@ -14,36 +14,154 @@ import (
 	"os"
 	"strings"
 
+	"github.com/BurntSushi/toml"
 	"github.com/gin-gonic/gin"
+	"github.com/nicksnyder/go-i18n/v2/i18n"
+	"golang.org/x/text/language"
 )
 
 //go:embed assets/* templates/*
 var webAssets embed.FS
 
-// TemplateData holds common data passed to all templates
+//go:embed locales/*.toml
+var localeFS embed.FS
+
+// i18nBundle is the global i18n bundle loaded at startup.
+var i18nBundle *i18n.Bundle
+
+// TemplateData holds common data passed to all templates.
 type TemplateData struct {
-	Title            string
-	Page             string
-	HeroTitle        string
-	HeroDescription  string
-	ContentID        string
-	ScriptFile       string
+	Title           string
+	Page            string
+	HeroTitle       string
+	HeroDescription string
+	ContentID       string
+	ScriptFile      string
+	// T is the translation function available inside templates.
+	// Usage: {{call .T "message_id"}}
+	T func(messageID string, templateData ...interface{}) string
+	// CurrentLang is the ISO 639-1 language code active for this request (e.g. "en", "es").
+	CurrentLang string
 }
 
 var templates *template.Template
 
 func init() {
-	// Load all templates from embedded filesystem
-	var err error
-	templates, err = template.ParseFS(webAssets, "templates/base.html", "templates/tts.html", "templates/stt.html", "templates/models.html", "templates/add-tts-models.html", "templates/add-stt-models.html")
+	// --- i18n bundle setup ---
+	bundle := i18n.NewBundle(language.English)
+	bundle.RegisterUnmarshalFunc("toml", toml.Unmarshal)
+
+	entries, err := localeFS.ReadDir("locales")
 	if err != nil {
-		panic("Failed to load templates: " + err.Error())
+		panic("failed to read locales directory: " + err.Error())
 	}
+	for _, e := range entries {
+		if !e.IsDir() && strings.HasSuffix(e.Name(), ".toml") {
+			data, readErr := localeFS.ReadFile("locales/" + e.Name())
+			if readErr != nil {
+				panic("failed to read locale file " + e.Name() + ": " + readErr.Error())
+			}
+			if _, parseErr := bundle.ParseMessageFileBytes(data, e.Name()); parseErr != nil {
+				panic("failed to parse locale file " + e.Name() + ": " + parseErr.Error())
+			}
+		}
+	}
+	i18nBundle = bundle
+
+	// --- Template setup ---
+	var tmplErr error
+	templates, tmplErr = template.ParseFS(webAssets, "templates/base.html", "templates/tts.html", "templates/stt.html", "templates/models.html", "templates/add-tts-models.html", "templates/add-stt-models.html")
+	if tmplErr != nil {
+		panic("Failed to load templates: " + tmplErr.Error())
+	}
+}
+
+// i18nMiddleware detects the preferred language from the request and stores a
+// *i18n.Localizer in the Gin context under the key "localizer". It also stores
+// the resolved language tag string under the key "lang".
+//
+// Detection order:
+//  1. ?lang= query parameter
+//  2. Accept-Language HTTP header
+//  3. Falls back to English
+func i18nMiddleware() gin.HandlerFunc {
+	matcher := language.NewMatcher([]language.Tag{
+		language.English,
+		language.Spanish,
+	})
+
+	return func(c *gin.Context) {
+		// Prefer explicit query parameter so users can force a language.
+		langParam := c.Query("lang")
+
+		var acceptLang string
+		if langParam != "" {
+			acceptLang = langParam
+		} else {
+			acceptLang = c.GetHeader("Accept-Language")
+		}
+
+		// Resolve to a supported tag.
+		tag, _ := language.MatchStrings(matcher, acceptLang)
+		base, _ := tag.Base()
+		langCode := base.String()
+
+		localizer := i18n.NewLocalizer(i18nBundle, langCode, acceptLang)
+		c.Set("localizer", localizer)
+		c.Set("lang", langCode)
+		c.Next()
+	}
+}
+
+// newTranslateFunc returns a translation function bound to the given localizer.
+// If a message ID is not found the function returns the message ID itself so
+// the UI always renders something meaningful.
+func newTranslateFunc(localizer *i18n.Localizer) func(messageID string, templateData ...interface{}) string {
+	return func(messageID string, templateData ...interface{}) string {
+		cfg := &i18n.LocalizeConfig{MessageID: messageID}
+		if len(templateData) > 0 {
+			cfg.TemplateData = templateData[0]
+		}
+		msg, err := localizer.Localize(cfg)
+		if err != nil {
+			return messageID // graceful degradation
+		}
+		return msg
+	}
+}
+
+// localizerFromCtx retrieves the *i18n.Localizer stored by i18nMiddleware.
+func localizerFromCtx(c *gin.Context) *i18n.Localizer {
+	v, exists := c.Get("localizer")
+	if !exists {
+		return i18n.NewLocalizer(i18nBundle, "en")
+	}
+	l, ok := v.(*i18n.Localizer)
+	if !ok {
+		return i18n.NewLocalizer(i18nBundle, "en")
+	}
+	return l
+}
+
+// langFromCtx retrieves the resolved language code stored by i18nMiddleware.
+func langFromCtx(c *gin.Context) string {
+	v, exists := c.Get("lang")
+	if !exists {
+		return "en"
+	}
+	s, ok := v.(string)
+	if !ok {
+		return "en"
+	}
+	return s
 }
 
 func main() {
 	// Create a new Gin router with default middleware
 	router := gin.Default()
+
+	// Apply i18n middleware to all routes
+	router.Use(i18nMiddleware())
 
 	// Serve static files from embedded filesystem at /assets/
 	// Use fs.Sub to serve from assets/ subdirectory
@@ -473,17 +591,17 @@ func handleTTS(c *gin.Context) {
 	// Validate voice based on model
 	kokoroVoices := map[string]bool{
 		// American Female
-		"af_nova":   true,
-		"af_sarah":  true,
-		"af_bella":  true,
-		"af_heart":  true,
-		"af_aoede":  true,
+		"af_nova":    true,
+		"af_sarah":   true,
+		"af_bella":   true,
+		"af_heart":   true,
+		"af_aoede":   true,
 		"af_jessica": true,
-		"af_kore":   true,
-		"af_nicole": true,
-		"af_river":  true,
-		"af_sky":    true,
-		"af_alloy":  true,
+		"af_kore":    true,
+		"af_nicole":  true,
+		"af_river":   true,
+		"af_sky":     true,
+		"af_alloy":   true,
 		// American Male
 		"am_adam":    true,
 		"am_echo":    true,
@@ -495,10 +613,10 @@ func handleTTS(c *gin.Context) {
 		"am_puck":    true,
 		"am_santa":   true,
 		// British Female
-		"bf_alice":     true,
-		"bf_emma":      true,
-		"bf_isabella":  true,
-		"bf_lily":      true,
+		"bf_alice":    true,
+		"bf_emma":     true,
+		"bf_isabella": true,
+		"bf_lily":     true,
 		// British Male
 		"bm_fable":  true,
 		"bm_george": true,
@@ -548,11 +666,11 @@ func handleTTS(c *gin.Context) {
 		"en_GB-semaine-medium":               true,
 		"en_GB-vctk-medium":                  true,
 		// Spanish
-		"es_ES-carlfm-x_low":      true,
-		"es_ES-davefx-medium":     true,
-		"es_ES-mls_10246-low":     true,
-		"es_ES-mls_9972-low":      true,
-		"es_ES-sharvard-medium":   true,
+		"es_ES-carlfm-x_low":    true,
+		"es_ES-davefx-medium":   true,
+		"es_ES-mls_10246-low":   true,
+		"es_ES-mls_9972-low":    true,
+		"es_ES-sharvard-medium": true,
 	}
 
 	// Validate and set defaults based on model
@@ -652,12 +770,16 @@ func handleTTS(c *gin.Context) {
 
 // serveHome renders the Text-to-Speech page using templates
 func serveHome(c *gin.Context) {
+	localizer := localizerFromCtx(c)
+	t := newTranslateFunc(localizer)
 	data := TemplateData{
-		Title:            "🍑 Speaches UI",
-		Page:             "tts",
-		HeroTitle:        "👄 Text-to-Speech",
-		HeroDescription:  "Convert text to natural-sounding speech with multiple voices and models",
-		ContentID:        "tts",
+		Title:           t("page_title_tts"),
+		Page:            "tts",
+		HeroTitle:       t("hero_title_tts"),
+		HeroDescription: t("hero_desc_tts"),
+		ContentID:       "tts",
+		T:               t,
+		CurrentLang:     langFromCtx(c),
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
@@ -672,12 +794,16 @@ func serveHome(c *gin.Context) {
 
 // serveSTT renders the Speech-to-Text page using templates
 func serveSTT(c *gin.Context) {
+	localizer := localizerFromCtx(c)
+	t := newTranslateFunc(localizer)
 	data := TemplateData{
-		Title:            "🍑 Speaches UI - Speech to Text",
-		Page:             "stt",
-		HeroTitle:        "👂 Speech-to-Text",
-		HeroDescription:  "Convert speech to text with advanced transcription models",
-		ContentID:        "stt",
+		Title:           t("page_title_stt"),
+		Page:            "stt",
+		HeroTitle:       t("hero_title_stt"),
+		HeroDescription: t("hero_desc_stt"),
+		ContentID:       "stt",
+		T:               t,
+		CurrentLang:     langFromCtx(c),
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
@@ -692,12 +818,16 @@ func serveSTT(c *gin.Context) {
 
 // serveModels renders the Models page using templates
 func serveModels(c *gin.Context) {
+	localizer := localizerFromCtx(c)
+	t := newTranslateFunc(localizer)
 	data := TemplateData{
-		Title:            "🍑 Speaches UI - Models",
-		Page:             "models",
-		HeroTitle:        "📦 Installed Models",
-		HeroDescription:  "View and manage installed models for text-to-speech and speech-to-text",
-		ContentID:        "models",
+		Title:           t("page_title_models"),
+		Page:            "models",
+		HeroTitle:       t("hero_title_models"),
+		HeroDescription: t("hero_desc_models"),
+		ContentID:       "models",
+		T:               t,
+		CurrentLang:     langFromCtx(c),
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
@@ -712,12 +842,16 @@ func serveModels(c *gin.Context) {
 
 // serveAddTTSModels renders the Add TTS Models page using templates
 func serveAddTTSModels(c *gin.Context) {
+	localizer := localizerFromCtx(c)
+	t := newTranslateFunc(localizer)
 	data := TemplateData{
-		Title:            "🍑 Speaches UI - Add TTS Models",
-		Page:             "add-tts-models",
-		HeroTitle:        "📥 Add Text-to-Speech Models",
-		HeroDescription:  "Browse and install TTS models from the speaches.ai registry",
-		ContentID:        "add-tts-models",
+		Title:           t("page_title_add_tts"),
+		Page:            "add-tts-models",
+		HeroTitle:       t("hero_title_add_tts"),
+		HeroDescription: t("hero_desc_add_tts"),
+		ContentID:       "add-tts-models",
+		T:               t,
+		CurrentLang:     langFromCtx(c),
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")
@@ -732,12 +866,16 @@ func serveAddTTSModels(c *gin.Context) {
 
 // serveAddSTTModels renders the Add STT Models page using templates
 func serveAddSTTModels(c *gin.Context) {
+	localizer := localizerFromCtx(c)
+	t := newTranslateFunc(localizer)
 	data := TemplateData{
-		Title:            "🍑 Speaches UI - Add STT Models",
-		Page:             "add-stt-models",
-		HeroTitle:        "📥 Add Speech-to-Text Models",
-		HeroDescription:  "Browse and install STT models from the speaches.ai registry",
-		ContentID:        "add-stt-models",
+		Title:           t("page_title_add_stt"),
+		Page:            "add-stt-models",
+		HeroTitle:       t("hero_title_add_stt"),
+		HeroDescription: t("hero_desc_add_stt"),
+		ContentID:       "add-stt-models",
+		T:               t,
+		CurrentLang:     langFromCtx(c),
 	}
 
 	c.Header("Content-Type", "text/html; charset=utf-8")

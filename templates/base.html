@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{.CurrentLang}}">
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,23 +13,33 @@
 	<!-- Navigation Bar -->
 	<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
 		<div class="container-fluid">
-			<a class="navbar-brand" href="/">🍑 Speaches UI</a>
-			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+			<a class="navbar-brand" href="/">{{call .T "brand_name"}}</a>
+			<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="{{call .T "toggle_navigation"}}">
 				<span class="navbar-toggler-icon"></span>
 			</button>
 			<div class="collapse navbar-collapse" id="navbarNav">
-				<ul class="navbar-nav ms-auto">
+				<ul class="navbar-nav ms-auto align-items-center">
 					<li class="nav-item">
-						<a class="nav-link {{if eq .Page "tts"}}active{{end}}" href="/">Text to Speech</a>
+						<a class="nav-link {{if eq .Page "tts"}}active{{end}}" href="/?lang={{.CurrentLang}}">{{call .T "nav_tts"}}</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link {{if eq .Page "stt"}}active{{end}}" href="/stt">Speech to Text</a>
+						<a class="nav-link {{if eq .Page "stt"}}active{{end}}" href="/stt?lang={{.CurrentLang}}">{{call .T "nav_stt"}}</a>
 					</li>
 					<li class="nav-item">
-						<a class="nav-link {{if eq .Page "models"}}active{{end}}" href="/models">Models</a>
+						<a class="nav-link {{if eq .Page "models"}}active{{end}}" href="/models?lang={{.CurrentLang}}">{{call .T "nav_models"}}</a>
+					</li>
+					<!-- Language switcher -->
+					<li class="nav-item dropdown">
+						<a class="nav-link dropdown-toggle" href="#" id="langDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+							{{if eq .CurrentLang "es"}}🇪🇸 ES{{else}}🇬🇧 EN{{end}}
+						</a>
+						<ul class="dropdown-menu dropdown-menu-end" aria-labelledby="langDropdown">
+							<li><a class="dropdown-item{{if eq .CurrentLang "en"}} active{{end}}" href="?lang=en">🇬🇧 English</a></li>
+							<li><a class="dropdown-item{{if eq .CurrentLang "es"}} active{{end}}" href="?lang=es">🇪🇸 Español</a></li>
+						</ul>
 					</li>
 					<li class="nav-item">
-						<button id="themeToggle" class="theme-toggle" title="Toggle dark mode">🌙</button>
+						<button id="themeToggle" class="theme-toggle" title="{{call .T "toggle_dark_mode"}}">🌙</button>
 					</li>
 				</ul>
 			</div>
@@ -66,6 +76,12 @@
 
 	<!-- Dark Mode Toggle -->
 	<script>
+		const i18nBase = {
+			theme_light: "{{call .T "theme_light"}}",
+			theme_dark: "{{call .T "theme_dark"}}",
+			theme_system: "{{call .T "theme_system"}}",
+		};
+
 		// Get current theme mode (light, dark, or system)
 		function getCurrentMode() {
 			return localStorage.getItem('themeMode') || 'system';
@@ -110,13 +126,13 @@
 
 			if (mode === 'light') {
 				button.textContent = '☀️';
-				button.title = 'Light mode (click to cycle)';
+				button.title = i18nBase.theme_light;
 			} else if (mode === 'dark') {
 				button.textContent = '🌑';
-				button.title = 'Dark mode (click to cycle)';
+				button.title = i18nBase.theme_dark;
 			} else {
 				button.textContent = '🖥️';
-				button.title = 'System mode (click to cycle)';
+				button.title = i18nBase.theme_system;
 			}
 		}
 

@@ -1,0 +1,332 @@
+# Spanish locale (Español)
+
+# Page titles
+[page_title_tts]
+other = "🍑 Speaches UI"
+
+[page_title_stt]
+other = "🍑 Speaches UI - Voz a Texto"
+
+[page_title_models]
+other = "🍑 Speaches UI - Modelos"
+
+[page_title_add_tts]
+other = "🍑 Speaches UI - Agregar modelos TTS"
+
+[page_title_add_stt]
+other = "🍑 Speaches UI - Agregar modelos STT"
+
+# Hero section
+[hero_title_tts]
+other = "👄 Texto a Voz"
+
+[hero_desc_tts]
+other = "Convierte texto en voz natural con múltiples voces y modelos"
+
+[hero_title_stt]
+other = "👂 Voz a Texto"
+
+[hero_desc_stt]
+other = "Convierte voz en texto con modelos avanzados de transcripción"
+
+[hero_title_models]
+other = "📦 Modelos instalados"
+
+[hero_desc_models]
+other = "Ver y gestionar los modelos instalados de texto a voz y voz a texto"
+
+[hero_title_add_tts]
+other = "📥 Agregar modelos de texto a voz"
+
+[hero_desc_add_tts]
+other = "Explorar e instalar modelos TTS desde el registro de speaches.ai"
+
+[hero_title_add_stt]
+other = "📥 Agregar modelos de voz a texto"
+
+[hero_desc_add_stt]
+other = "Explorar e instalar modelos STT desde el registro de speaches.ai"
+
+# Navigation brand and accessibility
+[brand_name]
+other = "🍑 Speaches UI"
+
+[toggle_navigation]
+other = "Alternar navegación"
+
+[loading]
+other = "Cargando..."
+
+# Shared / generic
+[unknown]
+other = "Desconocido"
+
+[error_prefix]
+other = "Error: "
+
+# TTS — download and audio
+[tts_download]
+other = "⬇ Descargar"
+
+[tts_audio_downloaded]
+other = "Audio descargado: "
+
+# STT — error messages
+[stt_failed]
+other = "Error al transcribir audio"
+
+# Models page — error messages
+[models_fetch_failed]
+other = "Error al obtener modelos: "
+
+[models_error_loading]
+other = "Error al cargar modelos: "
+
+# Install — status messages
+[install_failed]
+other = "Error al instalar modelo: "
+
+[install_success]
+other = "✓ Instalado exitosamente "
+
+[install_error_prefix]
+other = "Error al instalar "
+
+[install_error_sep]
+other = ": "
+
+# Navigation
+[nav_tts]
+other = "Texto a Voz"
+
+[nav_stt]
+other = "Voz a Texto"
+
+[nav_models]
+other = "Modelos"
+
+[toggle_dark_mode]
+other = "Cambiar modo oscuro"
+
+[theme_light]
+other = "Modo claro (clic para cambiar)"
+
+[theme_dark]
+other = "Modo oscuro (clic para cambiar)"
+
+[theme_system]
+other = "Modo sistema (clic para cambiar)"
+
+[lang_switcher_label]
+other = "Idioma"
+
+# Text-to-Speech page
+[tts_enter_text]
+other = "Ingresa texto para hablar:"
+
+[tts_placeholder]
+other = "Escribe tu texto aquí... (Mayús+Enter para enviar)"
+
+[tts_select_model]
+other = "Seleccionar modelo:"
+
+[tts_loading_models]
+other = "Cargando modelos..."
+
+[tts_select_voice]
+other = "Seleccionar voz:"
+
+[tts_speak_button]
+other = "Hablar"
+
+[tts_no_voices]
+other = "No hay voces disponibles"
+
+[tts_error_loading_voices]
+other = "Error al cargar voces"
+
+[tts_error_loading_models]
+other = "No se pudieron cargar los modelos instalados..."
+
+[tts_no_tts_models]
+other = "No hay modelos TTS instalados"
+
+[tts_enter_text_error]
+other = "Por favor ingresa algún texto para hablar"
+
+[tts_speaking]
+other = "Hablando..."
+
+[tts_generating]
+other = "Generando voz..."
+
+[tts_failed]
+other = "Error al generar voz"
+
+[tts_no_audio]
+other = "No hay audio para descargar"
+
+[tts_play]
+other = "Reproducir"
+
+[tts_pause]
+other = "Pausar"
+
+# Speech-to-Text page
+[stt_choose_file]
+other = "Elegir archivo de audio"
+
+[stt_no_file]
+other = "Ningún archivo seleccionado"
+
+[stt_transcribed_text]
+other = "Texto transcrito:"
+
+[stt_placeholder]
+other = "La transcripción aparecerá aquí..."
+
+[stt_select_language]
+other = "Seleccionar idioma:"
+
+[lang_english]
+other = "Inglés"
+
+[lang_spanish]
+other = "Español"
+
+[lang_french]
+other = "Francés"
+
+[lang_german]
+other = "Alemán"
+
+[lang_italian]
+other = "Italiano"
+
+[lang_portuguese]
+other = "Portugués"
+
+[lang_japanese]
+other = "Japonés"
+
+[lang_korean]
+other = "Coreano"
+
+[lang_chinese]
+other = "Chino"
+
+[stt_select_model]
+other = "Seleccionar modelo:"
+
+[stt_fast]
+other = "Rápido (menor precisión)"
+
+[stt_standard]
+other = "Estándar (equilibrado)"
+
+[stt_accurate]
+other = "Preciso (mayor calidad)"
+
+[stt_transcribe_button]
+other = "Transcribir"
+
+[stt_transcribing]
+other = "Transcribiendo..."
+
+[stt_processing]
+other = "Procesando audio..."
+
+[stt_success]
+other = "¡Transcripción completada con éxito!"
+
+[stt_audio_loaded]
+other = "¡Archivo de audio cargado con éxito!"
+
+[stt_play]
+other = "Reproducir"
+
+[stt_pause]
+other = "Pausar"
+
+# Models page
+[models_refresh]
+other = "Actualizar modelos"
+
+[models_add_tts]
+other = "Agregar modelos TTS"
+
+[models_add_stt]
+other = "Agregar modelos STT"
+
+[models_loading]
+other = "Cargando modelos instalados..."
+
+[models_tts_section]
+other = "Modelos de texto a voz"
+
+[models_stt_section]
+other = "Modelos de voz a texto"
+
+[models_no_tts]
+other = "No hay modelos TTS disponibles"
+
+[models_no_stt]
+other = "No hay modelos STT disponibles"
+
+[models_installed_badge]
+other = "Instalado"
+
+[models_id_label]
+other = "ID:"
+
+[models_desc_label]
+other = "Descripción:"
+
+[models_type_label]
+other = "Tipo:"
+
+# Add TTS / Add STT models pages
+[back_to_models]
+other = "Volver a modelos"
+
+[search_tts_placeholder]
+other = "Buscar modelos TTS..."
+
+[search_stt_placeholder]
+other = "Buscar modelos STT..."
+
+[table_model_name]
+other = "Nombre del modelo"
+
+[table_model_id]
+other = "ID del modelo"
+
+[table_description]
+other = "Descripción"
+
+[table_status]
+other = "Estado"
+
+[table_action]
+other = "Acción"
+
+[status_installed]
+other = "Instalado"
+
+[status_not_installed]
+other = "No instalado"
+
+[install_button]
+other = "Instalar"
+
+[installing_button]
+other = "Instalando..."
+
+[registry_loading]
+other = "Cargando modelos..."
+
+[registry_no_tts]
+other = "No se encontraron modelos TTS"
+
+[registry_no_stt]
+other = "No se encontraron modelos STT"

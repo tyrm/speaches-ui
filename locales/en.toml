@@ -1,0 +1,438 @@
+# English locale — source of truth
+
+# Page titles
+[page_title_tts]
+description = "Browser tab title for the TTS page"
+other = "🍑 Speaches UI"
+
+[page_title_stt]
+description = "Browser tab title for the STT page"
+other = "🍑 Speaches UI - Speech to Text"
+
+[page_title_models]
+description = "Browser tab title for the Models page"
+other = "🍑 Speaches UI - Models"
+
+[page_title_add_tts]
+description = "Browser tab title for the Add TTS Models page"
+other = "🍑 Speaches UI - Add TTS Models"
+
+[page_title_add_stt]
+description = "Browser tab title for the Add STT Models page"
+other = "🍑 Speaches UI - Add STT Models"
+
+# Hero section
+[hero_title_tts]
+description = "Hero heading on the TTS page"
+other = "👄 Text-to-Speech"
+
+[hero_desc_tts]
+description = "Hero description on the TTS page"
+other = "Convert text to natural-sounding speech with multiple voices and models"
+
+[hero_title_stt]
+description = "Hero heading on the STT page"
+other = "👂 Speech-to-Text"
+
+[hero_desc_stt]
+description = "Hero description on the STT page"
+other = "Convert speech to text with advanced transcription models"
+
+[hero_title_models]
+description = "Hero heading on the Models page"
+other = "📦 Installed Models"
+
+[hero_desc_models]
+description = "Hero description on the Models page"
+other = "View and manage installed models for text-to-speech and speech-to-text"
+
+[hero_title_add_tts]
+description = "Hero heading on the Add TTS Models page"
+other = "📥 Add Text-to-Speech Models"
+
+[hero_desc_add_tts]
+description = "Hero description on the Add TTS Models page"
+other = "Browse and install TTS models from the speaches.ai registry"
+
+[hero_title_add_stt]
+description = "Hero heading on the Add STT Models page"
+other = "📥 Add Speech-to-Text Models"
+
+[hero_desc_add_stt]
+description = "Hero description on the Add STT Models page"
+other = "Browse and install STT models from the speaches.ai registry"
+
+# Navigation brand and accessibility
+[brand_name]
+description = "Navbar brand text"
+other = "🍑 Speaches UI"
+
+[toggle_navigation]
+description = "Aria-label for the navbar toggler button"
+other = "Toggle navigation"
+
+[loading]
+description = "Generic loading text used in spinner visually-hidden spans"
+other = "Loading..."
+
+# Shared / generic
+[unknown]
+description = "Fallback label when a value is unknown"
+other = "Unknown"
+
+[error_prefix]
+description = "Prefix for JavaScript error messages shown to users"
+other = "Error: "
+
+# TTS — download and audio
+[tts_download]
+description = "Label for the TTS download button"
+other = "⬇ Download"
+
+[tts_audio_downloaded]
+description = "Success message prefix after audio is downloaded (filename appended)"
+other = "Audio downloaded: "
+
+# STT — error messages
+[stt_failed]
+description = "Error message when STT transcription fails"
+other = "Failed to transcribe audio"
+
+# Models page — error messages
+[models_fetch_failed]
+description = "Error message prefix when models fetch fails (statusText appended)"
+other = "Failed to fetch models: "
+
+[models_error_loading]
+description = "Error message prefix when models cannot be loaded (error.message appended)"
+other = "Error loading models: "
+
+# Install — status messages
+[install_failed]
+description = "Error message prefix when model install fails (statusText appended)"
+other = "Failed to install model: "
+
+[install_success]
+description = "Success message prefix after a model is installed (modelName appended)"
+other = "✓ Successfully installed "
+
+[install_error_prefix]
+description = "Error message prefix when model install throws (modelName appended next)"
+other = "Error installing "
+
+[install_error_sep]
+description = "Separator between modelName and error.message in install error string"
+other = ": "
+
+# Navigation
+[nav_tts]
+description = "Navigation link to Text to Speech page"
+other = "Text to Speech"
+
+[nav_stt]
+description = "Navigation link to Speech to Text page"
+other = "Speech to Text"
+
+[nav_models]
+description = "Navigation link to Models page"
+other = "Models"
+
+[toggle_dark_mode]
+description = "Tooltip for the dark mode toggle button"
+other = "Toggle dark mode"
+
+[theme_light]
+description = "Tooltip for the theme toggle when in light mode"
+other = "Light mode (click to cycle)"
+
+[theme_dark]
+description = "Tooltip for the theme toggle when in dark mode"
+other = "Dark mode (click to cycle)"
+
+[theme_system]
+description = "Tooltip for the theme toggle when in system mode"
+other = "System mode (click to cycle)"
+
+[lang_switcher_label]
+description = "Label for language switcher dropdown"
+other = "Language"
+
+# Text-to-Speech page
+[tts_enter_text]
+description = "Label for the TTS text input"
+other = "Enter text to speak:"
+
+[tts_placeholder]
+description = "Placeholder for TTS textarea"
+other = "Type your text here... (Shift+Enter to submit)"
+
+[tts_select_model]
+description = "Label for TTS model selector"
+other = "Select Model:"
+
+[tts_loading_models]
+description = "Placeholder shown while TTS models are loading"
+other = "Loading models..."
+
+[tts_select_voice]
+description = "Label for TTS voice selector"
+other = "Select Voice:"
+
+[tts_speak_button]
+description = "Label for the TTS speak button"
+other = "Speak"
+
+[tts_no_voices]
+description = "Message shown when no voices are available"
+other = "No voices available"
+
+[tts_error_loading_voices]
+description = "Message shown when voices fail to load"
+other = "Error loading voices"
+
+[tts_error_loading_models]
+description = "Error message when TTS models cannot be loaded"
+other = "Could not load installed models..."
+
+[tts_no_tts_models]
+description = "Message shown when no TTS models are installed"
+other = "No TTS models installed"
+
+[tts_enter_text_error]
+description = "Validation error when TTS form is submitted without text"
+other = "Please enter some text to speak"
+
+[tts_speaking]
+description = "Button label while TTS is speaking"
+other = "Speaking..."
+
+[tts_generating]
+description = "Status message while TTS audio is being generated"
+other = "Generating speech..."
+
+[tts_failed]
+description = "Error message when TTS generation fails"
+other = "Failed to generate speech"
+
+[tts_no_audio]
+description = "Error when download is clicked but no audio exists"
+other = "No audio to download"
+
+[tts_play]
+description = "Label for the audio play button"
+other = "Play"
+
+[tts_pause]
+description = "Label for the audio pause button"
+other = "Pause"
+
+# Speech-to-Text page
+[stt_choose_file]
+description = "Label for the audio file chooser button"
+other = "Choose Audio File"
+
+[stt_no_file]
+description = "Placeholder text when no audio file is selected"
+other = "No file selected"
+
+[stt_transcribed_text]
+description = "Label for the transcription output area"
+other = "Transcribed Text:"
+
+[stt_placeholder]
+description = "Placeholder for the STT transcription output textarea"
+other = "Transcription will appear here..."
+
+[stt_select_language]
+description = "Label for the STT language selector"
+other = "Select Language:"
+
+[lang_english]
+description = "Language option: English"
+other = "English"
+
+[lang_spanish]
+description = "Language option: Spanish"
+other = "Spanish"
+
+[lang_french]
+description = "Language option: French"
+other = "French"
+
+[lang_german]
+description = "Language option: German"
+other = "German"
+
+[lang_italian]
+description = "Language option: Italian"
+other = "Italian"
+
+[lang_portuguese]
+description = "Language option: Portuguese"
+other = "Portuguese"
+
+[lang_japanese]
+description = "Language option: Japanese"
+other = "Japanese"
+
+[lang_korean]
+description = "Language option: Korean"
+other = "Korean"
+
+[lang_chinese]
+description = "Language option: Chinese"
+other = "Chinese"
+
+[stt_select_model]
+description = "Label for the STT model selector"
+other = "Select Model:"
+
+[stt_fast]
+description = "STT model option: fast"
+other = "Fast (Lower accuracy)"
+
+[stt_standard]
+description = "STT model option: standard"
+other = "Standard (Balanced)"
+
+[stt_accurate]
+description = "STT model option: accurate"
+other = "Accurate (Higher quality)"
+
+[stt_transcribe_button]
+description = "Label for the STT transcribe button"
+other = "Transcribe"
+
+[stt_transcribing]
+description = "Button label while STT is transcribing"
+other = "Transcribing..."
+
+[stt_processing]
+description = "Status message while STT is processing audio"
+other = "Processing audio..."
+
+[stt_success]
+description = "Success message after transcription completes"
+other = "Transcription completed successfully!"
+
+[stt_audio_loaded]
+description = "Success message after an audio file is loaded"
+other = "Audio file loaded successfully!"
+
+[stt_play]
+description = "Label for the STT audio play button"
+other = "Play"
+
+[stt_pause]
+description = "Label for the STT audio pause button"
+other = "Pause"
+
+# Models page
+[models_refresh]
+description = "Button label to refresh the models list"
+other = "Refresh Models"
+
+[models_add_tts]
+description = "Button label to navigate to Add TTS Models"
+other = "Add TTS Models"
+
+[models_add_stt]
+description = "Button label to navigate to Add STT Models"
+other = "Add STT Models"
+
+[models_loading]
+description = "Status message while models are loading"
+other = "Loading installed models..."
+
+[models_tts_section]
+description = "Heading for the TTS models section"
+other = "Text-to-Speech Models"
+
+[models_stt_section]
+description = "Heading for the STT models section"
+other = "Speech-to-Text Models"
+
+[models_no_tts]
+description = "Message when no TTS models are available"
+other = "No TTS models available"
+
+[models_no_stt]
+description = "Message when no STT models are available"
+other = "No STT models available"
+
+[models_installed_badge]
+description = "Badge label for installed models"
+other = "Installed"
+
+[models_id_label]
+description = "Label for model ID field"
+other = "ID:"
+
+[models_desc_label]
+description = "Label for model description field"
+other = "Description:"
+
+[models_type_label]
+description = "Label for model type field"
+other = "Type:"
+
+# Add TTS / Add STT models pages
+[back_to_models]
+description = "Back navigation link label"
+other = "Back to Models"
+
+[search_tts_placeholder]
+description = "Placeholder for the TTS model search input"
+other = "Search TTS models..."
+
+[search_stt_placeholder]
+description = "Placeholder for the STT model search input"
+other = "Search STT models..."
+
+[table_model_name]
+description = "Table column header: model name"
+other = "Model Name"
+
+[table_model_id]
+description = "Table column header: model ID"
+other = "Model ID"
+
+[table_description]
+description = "Table column header: description"
+other = "Description"
+
+[table_status]
+description = "Table column header: status"
+other = "Status"
+
+[table_action]
+description = "Table column header: action"
+other = "Action"
+
+[status_installed]
+description = "Status badge for installed models"
+other = "Installed"
+
+[status_not_installed]
+description = "Status badge for models that are not installed"
+other = "Not Installed"
+
+[install_button]
+description = "Button label to install a model"
+other = "Install"
+
+[installing_button]
+description = "Button label while a model is being installed"
+other = "Installing..."
+
+[registry_loading]
+description = "Loading placeholder for the registry table"
+other = "Loading models..."
+
+[registry_no_tts]
+description = "Message when no TTS models are found in the registry"
+other = "No TTS models found"
+
+[registry_no_stt]
+description = "Message when no STT models are found in the registry"
+other = "No STT models found"

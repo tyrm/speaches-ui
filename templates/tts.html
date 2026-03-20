@@ -1,9 +1,31 @@
 {{define "tts-content"}}
+<!-- i18n strings for JavaScript -->
+<script>
+const i18n = {
+	tts_no_voices: "{{call .T "tts_no_voices"}}",
+	tts_error_loading_voices: "{{call .T "tts_error_loading_voices"}}",
+	tts_error_loading_models: "{{call .T "tts_error_loading_models"}}",
+	tts_no_tts_models: "{{call .T "tts_no_tts_models"}}",
+	tts_enter_text_error: "{{call .T "tts_enter_text_error"}}",
+	tts_speaking: "{{call .T "tts_speaking"}}",
+	tts_generating: "{{call .T "tts_generating"}}",
+	tts_failed: "{{call .T "tts_failed"}}",
+	tts_no_audio: "{{call .T "tts_no_audio"}}",
+	tts_play: "{{call .T "tts_play"}}",
+	tts_pause: "{{call .T "tts_pause"}}",
+	tts_speak_button: "{{call .T "tts_speak_button"}}",
+	tts_loading_models: "{{call .T "tts_loading_models"}}",
+	tts_download: "{{call .T "tts_download"}}",
+	tts_audio_downloaded: "{{call .T "tts_audio_downloaded"}}",
+	error_prefix: "{{call .T "error_prefix"}}",
+};
+</script>
+
 <!-- Audio Player -->
 <div id="playerContainer" class="player-container">
 	<div class="player-controls">
-		<button id="playBtn" class="play-btn">▶ Play</button>
-		<button id="downloadBtn" class="download-btn" disabled>⬇ Download</button>
+		<button id="playBtn" class="play-btn">▶ {{call .T "tts_play"}}</button>
+		<button id="downloadBtn" class="download-btn" disabled>{{call .T "tts_download"}}</button>
 		<div class="progress-container">
 			<input type="range" id="progressBar" class="progress-bar" min="0" value="0">
 			<span id="timeDisplay" class="time-display">0:00 / 0:00</span>
@@ -19,29 +41,29 @@
 	<div class="form-layout">
 		<div class="form-left">
 			<div class="form-group">
-				<label for="paragraphInput">Enter text to speak:</label>
+				<label for="paragraphInput">{{call .T "tts_enter_text"}}</label>
 				<textarea
 					class="form-control"
 					id="paragraphInput"
-					placeholder="Type your text here... (Shift+Enter to submit)"
+					placeholder="{{call .T "tts_placeholder"}}"
 					required></textarea>
 			</div>
 		</div>
 		<div class="form-right">
 			<div class="form-group">
-				<label for="modelSelect">Select Model:</label>
+				<label for="modelSelect">{{call .T "tts_select_model"}}</label>
 				<select class="form-control" id="modelSelect">
-					<option value="">Loading models...</option>
+					<option value="">{{call .T "tts_loading_models"}}</option>
 				</select>
 			</div>
 			<div class="form-group">
-				<label for="voiceSelect">Select Voice:</label>
+				<label for="voiceSelect">{{call .T "tts_select_voice"}}</label>
 				<select class="form-control" id="voiceSelect">
 					<!-- Voices populated dynamically -->
 				</select>
 			</div>
 			<button type="button" class="btn btn-primary btn-speak" id="speakBtn">
-				🔊 Speak
+				🔊 {{call .T "tts_speak_button"}}
 			</button>
 			<div id="statusMessage"></div>
 			<div id="errorAlert" class="alert alert-danger" role="alert"></div>
@@ -91,7 +113,7 @@
 		const selectedModel = modelSelect.value;
 		const previousVoice = voiceSelect.value;
 
-		voiceSelect.innerHTML = '<option value="">Loading voices...</option>';
+		voiceSelect.innerHTML = '<option value="">' + i18n.tts_loading_models + '</option>';
 
 		try {
 			const response = await fetch(`/api/voices/${encodeURIComponent(selectedModel)}`);
@@ -103,7 +125,7 @@
 			const entries = Object.entries(voices);
 
 			if (entries.length === 0) {
-				voiceSelect.innerHTML = '<option value="">No voices available</option>';
+				voiceSelect.innerHTML = '<option value="">' + i18n.tts_no_voices + '</option>';
 				return;
 			}
 
@@ -145,7 +167,7 @@
 			}
 		} catch (error) {
 			console.error('Error fetching voices:', error);
-			voiceSelect.innerHTML = '<option value="">Error loading voices</option>';
+			voiceSelect.innerHTML = '<option value="">' + i18n.tts_error_loading_voices + '</option>';
 		}
 	}
 
@@ -161,8 +183,8 @@
 			restorePreferences();
 		} catch (error) {
 			console.error('Error fetching models:', error);
-			modelSelect.innerHTML = '<option value="">Error loading models</option>';
-			showError('Could not load installed models. Check browser console for details.');
+			modelSelect.innerHTML = '<option value="">' + i18n.tts_error_loading_models + '</option>';
+			showError(i18n.tts_error_loading_models);
 		}
 	}
 
@@ -171,7 +193,7 @@
 		modelSelect.innerHTML = '';
 
 		if (installedModels.length === 0) {
-			modelSelect.innerHTML = '<option value="">No TTS models installed</option>';
+			modelSelect.innerHTML = '<option value="">' + i18n.tts_no_tts_models + '</option>';
 			return;
 		}
 
@@ -233,13 +255,13 @@
 		const text = textInput.value.trim();
 
 		if (!text) {
-			showError('Please enter some text to speak');
+			showError(i18n.tts_enter_text_error);
 			return;
 		}
 
 		speakBtn.disabled = true;
-		speakBtn.textContent = '🔊 Speaking...';
-		statusMessage.textContent = 'Generating speech...';
+		speakBtn.textContent = '🔊 ' + i18n.tts_speaking;
+		statusMessage.textContent = i18n.tts_generating;
 		hideAllAlerts();
 
 		try {
@@ -257,7 +279,7 @@
 
 			if (!response.ok) {
 				const errorData = await response.json();
-				throw new Error(errorData.error || 'Failed to generate speech');
+				throw new Error(errorData.error || i18n.tts_failed);
 			}
 
 			const audioBlob = await response.blob();
@@ -275,18 +297,18 @@
 
 		} catch (error) {
 			console.error('TTS Error:', error);
-			showError('Error: ' + error.message);
+			showError(i18n.error_prefix + error.message);
 			statusMessage.textContent = '';
 		} finally {
 			speakBtn.disabled = false;
-			speakBtn.textContent = '🔊 Speak';
+			speakBtn.textContent = '🔊 ' + i18n.tts_speak_button;
 		}
 	});
 
 	// Handle download button click
 	downloadBtn.addEventListener('click', function() {
 		if (!audioUrl) {
-			showError('No audio to download');
+			showError(i18n.tts_no_audio);
 			return;
 		}
 
@@ -304,7 +326,7 @@
 		link.click();
 		document.body.removeChild(link);
 
-		showSuccess('Audio downloaded: ' + filename);
+		showSuccess(i18n.tts_audio_downloaded + filename);
 	});
 
 	// Play/Pause handler
@@ -322,9 +344,9 @@
 
 	function updatePlayButton() {
 		if (audioPlayer.paused) {
-			playBtn.textContent = '▶ Play';
+			playBtn.textContent = '▶ ' + i18n.tts_play;
 		} else {
-			playBtn.textContent = '⏸ Pause';
+			playBtn.textContent = '⏸ ' + i18n.tts_pause;
 		}
 	}
 

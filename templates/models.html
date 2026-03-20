@@ -1,14 +1,30 @@
 {{define "models-content"}}
+<!-- i18n strings for JavaScript -->
+<script>
+const i18n = {
+	models_loading: "{{call .T "models_loading"}}",
+	models_no_tts: "{{call .T "models_no_tts"}}",
+	models_no_stt: "{{call .T "models_no_stt"}}",
+	models_installed_badge: "{{call .T "models_installed_badge"}}",
+	models_id_label: "{{call .T "models_id_label"}}",
+	models_desc_label: "{{call .T "models_desc_label"}}",
+	models_type_label: "{{call .T "models_type_label"}}",
+	unknown: "{{call .T "unknown"}}",
+	models_fetch_failed: "{{call .T "models_fetch_failed"}}",
+	models_error_loading: "{{call .T "models_error_loading"}}",
+};
+</script>
+
 <div class="models-container">
 	<div class="models-controls">
-		<button id="refreshBtn" class="btn btn-primary">🔄 Refresh Models</button>
-		<a href="/add-tts-models" class="btn btn-success">➕ Add TTS Models</a>
-		<a href="/add-stt-models" class="btn btn-success">➕ Add STT Models</a>
+		<button id="refreshBtn" class="btn btn-primary">🔄 {{call .T "models_refresh"}}</button>
+		<a href="/add-tts-models?lang={{.CurrentLang}}" class="btn btn-success">➕ {{call .T "models_add_tts"}}</a>
+		<a href="/add-stt-models?lang={{.CurrentLang}}" class="btn btn-success">➕ {{call .T "models_add_stt"}}</a>
 		<div id="statusMessage" class="status-message"></div>
 	</div>
 
 	<div id="loadingSpinner" class="spinner-border" role="status" style="display: none;">
-		<span class="visually-hidden">Loading...</span>
+		<span class="visually-hidden">{{call .T "loading"}}</span>
 	</div>
 
 	<div id="errorAlert" class="alert alert-danger" role="alert" style="display: none;"></div>
@@ -16,16 +32,16 @@
 	<div id="modelsContent">
 		<div class="models-grid">
 			<div id="ttsModels" class="models-section">
-				<h3>Text-to-Speech Models</h3>
+				<h3>{{call .T "models_tts_section"}}</h3>
 				<div id="ttsList" class="models-list">
-					<p class="text-muted">Loading models...</p>
+					<p class="text-muted">{{call .T "models_loading"}}</p>
 				</div>
 			</div>
 
 			<div id="sttModels" class="models-section">
-				<h3>Speech-to-Text Models</h3>
+				<h3>{{call .T "models_stt_section"}}</h3>
 				<div id="sttList" class="models-list">
-					<p class="text-muted">Loading models...</p>
+					<p class="text-muted">{{call .T "models_loading"}}</p>
 				</div>
 			</div>
 		</div>
@@ -183,7 +199,7 @@
 	async function fetchModels() {
 		loadingSpinner.style.display = 'block';
 		errorAlert.style.display = 'none';
-		statusMessage.textContent = 'Loading installed models...';
+		statusMessage.textContent = i18n.models_loading;
 		statusMessage.classList.add('show');
 
 		try {
@@ -215,7 +231,7 @@
 
 	function displayTTSModels(models) {
 		if (models.length === 0) {
-			ttsList.innerHTML = '<p class="text-muted">No TTS models available</p>';
+			ttsList.innerHTML = '<p class="text-muted">' + i18n.models_no_tts + '</p>';
 			return;
 		}
 
@@ -224,13 +240,13 @@
 				<div class="model-info">
 					<div class="model-name">${escapeHtml(model.name)}</div>
 					<div class="model-details">
-						<strong>ID:</strong> ${escapeHtml(model.id)}<br>
-						${model.description ? `<strong>Description:</strong> ${escapeHtml(model.description)}<br>` : ''}
-						<strong>Type:</strong> ${escapeHtml(model.type || 'Unknown')}
+						<strong>${i18n.models_id_label}</strong> ${escapeHtml(model.id)}<br>
+						${model.description ? `<strong>${i18n.models_desc_label}</strong> ${escapeHtml(model.description)}<br>` : ''}
+						<strong>${i18n.models_type_label}</strong> ${escapeHtml(model.type || 'Unknown')}
 					</div>
 				</div>
 				<div class="model-status">
-					<span class="status-badge status-installed">✓ Installed</span>
+					<span class="status-badge status-installed">✓ ${i18n.models_installed_badge}</span>
 				</div>
 			</div>
 		`).join('');
@@ -238,7 +254,7 @@
 
 	function displaySTTModels(models) {
 		if (models.length === 0) {
-			sttList.innerHTML = '<p class="text-muted">No STT models available</p>';
+			sttList.innerHTML = '<p class="text-muted">' + i18n.models_no_stt + '</p>';
 			return;
 		}
 
@@ -247,13 +263,13 @@
 				<div class="model-info">
 					<div class="model-name">${escapeHtml(model.name)}</div>
 					<div class="model-details">
-						<strong>ID:</strong> ${escapeHtml(model.id)}<br>
-						${model.description ? `<strong>Description:</strong> ${escapeHtml(model.description)}<br>` : ''}
-						<strong>Type:</strong> ${escapeHtml(model.type || 'Unknown')}
+						<strong>${i18n.models_id_label}</strong> ${escapeHtml(model.id)}<br>
+						${model.description ? `<strong>${i18n.models_desc_label}</strong> ${escapeHtml(model.description)}<br>` : ''}
+						<strong>${i18n.models_type_label}</strong> ${escapeHtml(model.type || 'Unknown')}
 					</div>
 				</div>
 				<div class="model-status">
-					<span class="status-badge status-installed">✓ Installed</span>
+					<span class="status-badge status-installed">✓ ${i18n.models_installed_badge}</span>
 				</div>
 			</div>
 		`).join('');

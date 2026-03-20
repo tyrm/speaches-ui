@@ -1,9 +1,21 @@
 {{define "add-stt-models-content"}}
+<!-- i18n strings for JavaScript -->
+<script>
+const i18n = {
+	registry_loading: "{{call .T "registry_loading"}}",
+	registry_no_stt: "{{call .T "registry_no_stt"}}",
+	status_installed: "{{call .T "status_installed"}}",
+	status_not_installed: "{{call .T "status_not_installed"}}",
+	install_button: "{{call .T "install_button"}}",
+	installing_button: "{{call .T "installing_button"}}",
+};
+</script>
+
 <div class="add-models-container">
 	<div class="add-models-header">
-		<a href="/models" class="btn btn-secondary">← Back to Models</a>
+		<a href="/models?lang={{.CurrentLang}}" class="btn btn-secondary">← {{call .T "back_to_models"}}</a>
 		<div id="searchContainer" class="search-container">
-			<input type="text" id="searchInput" class="form-control" placeholder="Search STT models...">
+			<input type="text" id="searchInput" class="form-control" placeholder="{{call .T "search_stt_placeholder"}}">
 		</div>
 	</div>
 
@@ -18,16 +30,16 @@
 		<table class="table table-hover models-table">
 			<thead>
 				<tr>
-					<th>Model Name</th>
-					<th>Model ID</th>
-					<th>Description</th>
-					<th>Status</th>
-					<th style="width: 120px;">Action</th>
+					<th>{{call .T "table_model_name"}}</th>
+					<th>{{call .T "table_model_id"}}</th>
+					<th>{{call .T "table_description"}}</th>
+					<th>{{call .T "table_status"}}</th>
+					<th style="width: 120px;">{{call .T "table_action"}}</th>
 				</tr>
 			</thead>
 			<tbody id="modelsTableBody">
 				<tr>
-					<td colspan="5" class="text-center text-muted" style="padding: 40px;">Loading models...</td>
+					<td colspan="5" class="text-center text-muted" style="padding: 40px;">{{call .T "registry_loading"}}</td>
 				</tr>
 			</tbody>
 		</table>
@@ -240,7 +252,7 @@
 	function displayModels(models) {
 		if (models.length === 0) {
 			modelsTableBody.innerHTML =
-				'<tr><td colspan="5" class="text-center text-muted" style="padding: 40px;">No STT models found</td></tr>';
+				'<tr><td colspan="5" class="text-center text-muted" style="padding: 40px;">' + i18n.registry_no_stt + '</td></tr>';
 			return;
 		}
 
@@ -254,14 +266,16 @@
 				<td class="model-id">${escapeHtml(model.id)}</td>
 				<td>${model.description ? escapeHtml(model.description) : '<span class="text-muted">-</span>'}</td>
 				<td>
-					${isInstalled ? '<span class="status-badge status-installed">✓ Installed</span>' : '<span class="status-badge status-notinstalled">⊘ Not Installed</span>'}
+					${isInstalled
+						? '<span class="status-badge status-installed">✓ ' + i18n.status_installed + '</span>'
+						: '<span class="status-badge status-notinstalled">⊘ ' + i18n.status_not_installed + '</span>'}
 				</td>
 				<td>
 					${
 						isInstalled
 							? ''
 							: `<button class="btn btn-sm btn-primary install-btn" data-model-id="${escapeHtml(model.id)}" data-model-name="${escapeHtml(model.name)}">
-								📥 Install
+								📥 ${i18n.install_button}
 							</button>`
 					}
 				</td>
@@ -283,7 +297,7 @@
 
 		btn.disabled = true;
 		const originalText = btn.textContent;
-		btn.textContent = '⏳ Installing...';
+		btn.textContent = '⏳ ' + i18n.installing_button;
 
 		try {
 			const response = await fetch('/api/models/install', {

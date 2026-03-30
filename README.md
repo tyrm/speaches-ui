@@ -37,10 +37,19 @@ Default: `http://localhost:8000`
 
 ## Usage
 
+### Text-to-Speech
+
 1. Enter text in the textarea
-2. Select a voice from the dropdown
-3. Click **Speak** or press **Shift+Enter**
-4. Audio plays automatically
+2. Select a **Model** (Kokoro or Piper)
+3. Select a **Voice** (varies by model)
+4. Choose an **Output Format**: MP3, WAV, FLAC, or PCM
+5. Adjust **Speed**: 0.25× to 4.0× (1.0× is normal)
+6. Set **Sample Rate**: 8000–48000 Hz (default 24000 Hz — higher = better quality, larger file)
+7. Click **Speak** or press **Shift+Enter**
+8. Audio plays automatically in the player
+9. Click **⬇ Download** to save the audio file
+
+Your selections are automatically saved and restored on the next visit!
 
 ## API
 
@@ -52,17 +61,30 @@ Generate speech from text.
 ```json
 {
   "text": "Your text here",
-  "voice": "af_nova"
+  "model": "tts-1",
+  "voice": "af_nova",
+  "format": "mp3",
+  "speed": 1.0,
+  "sample_rate": 24000
 }
 ```
 
-**Response:** Audio stream (audio/mpeg) or error JSON
+**Parameters:**
+- `text` (string, required): Text to convert to speech
+- `model` (string, optional): `tts-1` (Kokoro) or `tts-1-piper` (Piper). Default: `tts-1`
+- `voice` (string, optional): Voice ID (varies by model)
+- `format` (string, optional): Output format — `mp3`, `wav`, `flac`, or `pcm`. Default: `mp3`
+- `speed` (float, optional): Speech rate from 0.25× to 4.0×. Default: `1.0`
+- `sample_rate` (int, optional): Audio sample rate in Hz, range 8000–48000. Default: `24000`
+
+**Response:** Audio stream in the specified format, or error JSON
 
 **Example:**
 ```bash
 curl -X POST http://localhost:5420/api/tts \
   -H "Content-Type: application/json" \
-  -d '{"text":"Hello"}' --output speech.mp3
+  -d '{"text":"Hello world","format":"wav","speed":1.5,"sample_rate":48000}' \
+  --output speech.wav
 ```
 
 ## Project Structure

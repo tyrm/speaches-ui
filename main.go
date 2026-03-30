@@ -5,6 +5,7 @@ import (
 	"embed"
 	_ "embed"
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"io/fs"
@@ -374,9 +375,12 @@ func handleInstallModel(c *gin.Context) {
 // handleTTS processes text-to-speech requests by calling the speaches.ai server
 func handleTTS(c *gin.Context) {
 	var req struct {
-		Text  string `json:"text" binding:"required"`
-		Voice string `json:"voice"`
-		Model string `json:"model"`
+		Text       string  `json:"text" binding:"required"`
+		Voice      string  `json:"voice"`
+		Model      string  `json:"model"`
+		Format     string  `json:"format"`      // mp3, wav, flac, pcm
+		Speed      float64 `json:"speed"`      // 0.25–4.0
+		SampleRate int     `json:"sample_rate"` // 8000–48000 Hz
 	}
 
 	if err := c.BindJSON(&req); err != nil {
@@ -387,6 +391,42 @@ func handleTTS(c *gin.Context) {
 	if req.Text == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "text cannot be empty"})
 		return
+	}
+
+	// Validate and set default format (supported formats: mp3, wav, flac, pcm)
+	validFormats := map[string]string{
+		"mp3":  "audio/mpeg",
+		"wav":  "audio/wav",
+		"flac": "audio/flac",
+		"pcm":  "audio/pcm",
+	}
+	format := req.Format
+	if _, ok := validFormats[format]; !ok {
+		format = "mp3" // Default to MP3
+	}
+
+	// Validate and set default speed (0.25–4.0)
+	speed := req.Speed
+	if speed == 0 {
+		speed = 1.0 // Default to normal speed
+	}
+	if speed < 0.25 {
+		speed = 0.25 // Minimum speed
+	}
+	if speed > 4.0 {
+		speed = 4.0 // Maximum speed
+	}
+
+	// Validate and set default sample rate (8000–48000 Hz)
+	sampleRate := req.SampleRate
+	if sampleRate == 0 {
+		sampleRate = 24000 // Default to 24 kHz (good balance of quality and file size)
+	}
+	if sampleRate < 8000 {
+		sampleRate = 8000 // Minimum sample rate
+	}
+	if sampleRate > 48000 {
+		sampleRate = 48000 // Maximum sample rate
 	}
 
 	// Set default model if not provided
@@ -499,9 +539,12 @@ func handleTTS(c *gin.Context) {
 
 	// Create request payload for speaches.ai server (OpenAI API compatible)
 	payload := map[string]interface{}{
-		"model": actualModel,
-		"input": req.Text,
-		"voice": voice,
+		"model":            actualModel,
+		"input":            req.Text,
+		"voice":            voice,
+		"response_format":  format,
+		"speed":            speed,
+		"sample_rate":      sampleRate,
 	}
 
 	jsonPayload, err := json.Marshal(payload)
@@ -550,9 +593,10 @@ func handleTTS(c *gin.Context) {
 				defer resp2.Body.Close()
 
 				if resp2.StatusCode == http.StatusOK {
-					// Success! Stream the audio
-					c.Header("Content-Type", "audio/mpeg")
-					c.Header("Content-Disposition", "inline")
+					// Success! Stream the audio with proper format headers
+					contentType := validFormats[format]
+					c.Header("Content-Type", contentType)
+					c.Header("Content-Disposition", fmt.Sprintf(`inline; filename="speech.%s"`, format))
 					io.Copy(c.Writer, resp2.Body)
 					return
 				}
@@ -564,9 +608,10 @@ func handleTTS(c *gin.Context) {
 		return
 	}
 
-	// Set proper audio response headers
-	c.Header("Content-Type", "audio/mpeg")
-	c.Header("Content-Disposition", "inline")
+	// Set proper audio response headers based on selected format
+	contentType := validFormats[format]
+	c.Header("Content-Type", contentType)
+	c.Header("Content-Disposition", fmt.Sprintf(`inline; filename="speech.%s"`, format))
 
 	// Stream the audio response back to the client
 	io.Copy(c.Writer, resp.Body)

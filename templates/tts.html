@@ -353,6 +353,14 @@
 			}
 
 			const audioBlob = await response.blob();
+
+			// A valid audio file must be larger than a minimal header.
+			// Kokoro returns near-empty audio when it can't tokenize the input
+			// (e.g. Chinese/Japanese without the required misaki language packs).
+			if (audioBlob.size < 1024) {
+				throw new Error('No audio was generated. For Chinese or Japanese text, the speaches backend requires misaki[zh] or misaki[ja] to be installed.');
+			}
+
 			if (audioUrl) {
 				URL.revokeObjectURL(audioUrl);
 			}

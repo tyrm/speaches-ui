@@ -440,38 +440,77 @@ func handleTTS(c *gin.Context) {
 
 	// Validate voice based on model
 	kokoroVoices := map[string]bool{
-		// American Female
-		"af_nova":   true,
-		"af_sarah":  true,
-		"af_bella":  true,
-		"af_heart":  true,
-		"af_aoede":  true,
-		"af_jessica": true,
-		"af_kore":   true,
-		"af_nicole": true,
-		"af_river":  true,
-		"af_sky":    true,
-		"af_alloy":  true,
-		// American Male
-		"am_adam":    true,
-		"am_echo":    true,
-		"am_liam":    true,
-		"am_onyx":    true,
-		"am_michael": true,
-		"am_eric":    true,
-		"am_fenrir":  true,
-		"am_puck":    true,
-		"am_santa":   true,
-		// British Female
-		"bf_alice":     true,
-		"bf_emma":      true,
-		"bf_isabella":  true,
-		"bf_lily":      true,
-		// British Male
-		"bm_fable":  true,
-		"bm_george": true,
-		"bm_daniel": true,
-		"bm_lewis":  true,
+		// American English - Female
+		"af_nova":     true,
+		"af_sarah":    true,
+		"af_bella":    true,
+		"af_heart":    true,
+		"af_aoede":    true,
+		"af_jessica":  true,
+		"af_kore":     true,
+		"af_nicole":   true,
+		"af_river":    true,
+		"af_sky":      true,
+		"af_alloy":    true,
+		// American English - Male
+		"am_adam":     true,
+		"am_echo":     true,
+		"am_liam":     true,
+		"am_onyx":     true,
+		"am_michael":  true,
+		"am_eric":     true,
+		"am_fenrir":   true,
+		"am_puck":     true,
+		"am_santa":    true,
+		// British English - Female
+		"bf_alice":    true,
+		"bf_emma":     true,
+		"bf_isabella": true,
+		"bf_lily":     true,
+		// British English - Male
+		"bm_fable":    true,
+		"bm_george":   true,
+		"bm_daniel":   true,
+		"bm_lewis":    true,
+		// Spanish - Female
+		"ef_dora":     true,
+		// Spanish - Male
+		"em_alex":     true,
+		"em_santa":    true,
+		// French - Female
+		"ff_siwis":    true,
+		// Hindi - Female
+		"hf_alpha":    true,
+		"hf_beta":     true,
+		// Hindi - Male
+		"hm_omega":    true,
+		"hm_psi":      true,
+		// Italian - Female
+		"if_sara":     true,
+		// Italian - Male
+		"im_nicola":   true,
+		// Brazilian Portuguese - Female
+		"pf_dora":     true,
+		// Brazilian Portuguese - Male
+		"pm_alex":     true,
+		"pm_santa":    true,
+		// Japanese - Female
+		"jf_alpha":    true,
+		"jf_gongitsune": true,
+		"jf_nezumi":   true,
+		"jf_tebukuro": true,
+		// Japanese - Male
+		"jm_kumo":     true,
+		// Mandarin Chinese - Female
+		"zf_xiaobei":  true,
+		"zf_xiaoni":   true,
+		"zf_xiaoxiao": true,
+		"zf_xiaoyi":   true,
+		// Mandarin Chinese - Male
+		"zm_yunjian":  true,
+		"zm_yunxi":    true,
+		"zm_yunxia":   true,
+		"zm_yunyang":  true,
 	}
 
 	piperVoices := map[string]bool{

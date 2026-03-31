@@ -51,6 +51,56 @@ Default: `http://localhost:8000`
 
 Your selections are automatically saved and restored on the next visit!
 
+## Supported Voices
+
+### Kokoro (Neural TTS) - Model `tts-1`
+
+**🇺🇸 American English:**
+- **Female (11):** Nova, Sarah, Bella, Heart, Aoede, Jessica, Kore, Nicole, River, Sky, Alloy
+- **Male (9):** Adam, Echo, Liam, Onyx, Michael, Eric, Fenrir, Puck, Santa
+
+**🇬🇧 British English:**
+- **Female (4):** Alice, Emma, Isabella, Lily
+- **Male (4):** Fable, George, Daniel, Lewis
+
+**🇪🇸 Spanish:**
+- **Female (1):** Dora
+- **Male (2):** Alex, Santa
+
+**🇫🇷 French:**
+- **Female (1):** Siwis
+
+**🇮🇳 Hindi:**
+- **Female (2):** Alpha, Beta
+- **Male (2):** Omega, Psi
+
+**🇮🇹 Italian:**
+- **Female (1):** Sara
+- **Male (1):** Nicola
+
+**🇧🇷 Brazilian Portuguese:**
+- **Female (1):** Dora
+- **Male (2):** Alex, Santa
+
+**🇯🇵 Japanese:**
+- **Female (4):** Alpha, Gongitsune, Nezumi, Tebukuro
+- **Male (1):** Kumo
+
+**🇨🇳 Mandarin Chinese:**
+- **Female (4):** Xiaobei, Xiaoni, Xiaoxiao, Xiaoyi
+- **Male (4):** Yunjian, Yunxi, Yunxia, Yunyang
+
+### Piper (Fast TTS) - Model `tts-1-piper`
+
+**🇺🇸 US English:**
+- Ryan (3 quality levels: high, medium, low)
+- Female voices: HFC Female, Amy, Kathleen, Kristin, LJ Speech
+- Male voices: HFC Male, Lessac, Danny, Joe, John, Bryce, Kusal, Norman, and others
+- Specialized: LibriTTS, Arctic, L2Arctic variants
+
+**🇬🇧 British English:**
+- Alan, Southern English Female, Alba, Aru, Cori, Jenny Dioco, Northern English Male, Semaine, VCTK
+
 ## API
 
 ### POST `/api/tts`
